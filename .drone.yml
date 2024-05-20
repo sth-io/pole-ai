@@ -1,0 +1,5 @@
+pipeline:
+  run-build:
+    image: node:20.12.0
+    commands:
+      - npm i && npm run build

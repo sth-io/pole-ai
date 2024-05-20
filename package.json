@@ -1,0 +1,38 @@
+{
+  "name": "pole-ai",
+  "version": "0.1.2",
+  "description": "",
+  "main": "main.js",
+  "workspaces": [
+    "llm-api",
+    "llm-chat"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "electron:dev": "electron .",
+    "build": "rimraf ./build/* && npm run build -w llm-api && npm run build -w llm-chat",
+    "local": "concurrently \"npm run start -w llm-api\" \"npm run start -w llm-chat\"",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "concurrently": "^8.2.2",
+    "electron-squirrel-startup": "^1.0.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.4.0",
+    "@electron-forge/maker-deb": "^7.4.0",
+    "@electron-forge/maker-rpm": "^7.4.0",
+    "@electron-forge/maker-squirrel": "^7.4.0",
+    "@electron-forge/maker-zip": "^7.4.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
+    "@electron-forge/plugin-fuses": "^7.4.0",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^29.3.1",
+    "foreman": "^3.0.1"
+  }
+}

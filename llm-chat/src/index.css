@@ -1,0 +1,45 @@
+@font-face {
+  font-family: 'Lato';
+  src: url('../public/Lato-Light.ttf') format('truetype'),
+}
+
+body {
+  margin: 0;
+  font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  font-size: 16px;
+  background: #000;
+  max-height: 100%;
+}
+
+code, pre {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+  background: #31363F;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid #76ABAE;
+  color: #EEEEEE;
+  font-size: 13px;
+  max-width: calc(100vw - 150px);
+  box-sizing: border-box;
+}
+pre code {
+  padding: 5px 10px;
+  background: none;
+  border: none;
+}
+
+pre {
+  padding: 0;
+  margin: 0;
+  background: #31363F;
+  border-radius: 5px;
+  border: 1px solid #76ABAE;
+  white-space: pre-wrap;       /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}

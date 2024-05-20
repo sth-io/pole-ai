@@ -1,0 +1,22 @@
+services:
+  pole-api:
+    build:
+      context: ./llm-api
+    volumes:
+      - ./db:/usr/src/app/db/
+    environment:
+      NODE_ENV: production
+      CHROMA_SERVER: http://192.168.0.172:8101
+      OLLAMA_SERVER: http://192.168.0.40:11434
+
+    ports:
+      - 3001:3000
+
+  pole-chat:
+    build:
+      context: ./llm-chat
+    environment:
+      NODE_ENV: production
+      REACT_APP_API: http://192.168.0.40:3001
+    ports:
+      - 3000:80
