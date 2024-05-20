@@ -3,10 +3,23 @@
 Is a tool meant for interactions with your offline LLM assitants.
 The name stands for "field" in Polish but using the English meaning works for me as well!
 
+![Pole](docs/images/pole.png)
+
 # This is early beta, made with EDD model.
 
 This early stage beta version is built upon the EDD model - short for Excitement Driven Development, a method that keeps the thrill alive while coding. It's exciting, but also means we need to be extra vigilant for any hiccups or missing bits.
 While I did my best to make sure that all success paths work properly I cannot promise something won't break. Also some interactions are incomplite (there are no toast messages yet!). Every day I either add new feature or improve existing one
+
+# Overview 
+
+![ui](docs/images/ui.png)
+![Messages](docs/images/messages.png)
+![Model tune](docs/images/model_tune.png)
+![Personas](docs/images/personas.png)
+![RAG](docs/images/rag.png)
+![RAG upload](docs/images/rag_upload.png)
+
+
 
 ## Running 
 
