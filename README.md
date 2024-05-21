@@ -3,25 +3,54 @@
 Is a tool meant for interactions with your offline LLM assitants.
 The name stands for "field" in Polish but using the English meaning works for me as well!
 
-![Pole](docs/images/pole.png)
+<p align="center">
+  ![Pole](docs/images/pole.png)
+  "pole" means field in Polish.  
+</p
 
-# This is early beta, made with EDD model.
+# This is early beta, made with ExDD methodology.
 
-This early stage beta version is built upon the EDD model - short for Excitement Driven Development, a method that keeps the thrill alive while coding. It's exciting, but also means we need to be extra vigilant for any hiccups or missing bits.
+This early stage beta version is built upon the ExDD methodology - short for Excitement Driven Development, a method that keeps the thrill alive while coding. It's exciting, but also means we need to be extra vigilant for any hiccups or missing bits.
 While I did my best to make sure that all success paths work properly I cannot promise something won't break. Also some interactions are incomplite (there are no toast messages yet!). Every day I either add new feature or improve existing one
 
-# Overview 
+# Overview
 
-![ui](docs/images/ui.png)
-![Messages](docs/images/messages.png)
-![Model tune](docs/images/model_tune.png)
-![Personas](docs/images/personas.png)
-![RAG](docs/images/rag.png)
-![RAG upload](docs/images/rag_upload.png)
+<p align="center">
+  ![ui](docs/images/ui.png)
+  a view on the ui
+</p>
 
+<p align="center">
+  ![Messages](docs/images/messages.png)
+  messages design, three icons on the right are (order top to bottom) - exclude message from context, diverege (start a new conversation from this point), regenerate (get a new answer to the previous question, using currently selected model) 
+</p>
 
+<p align="center">
+  ![Model tune](docs/images/model_tune.png)
+  model options, hovering over the element shows a tooltip explaining the property. No value means it's using default ollama setup 
+</p>
 
-## Running 
+<p align="center">
+  ![Personas](docs/images/personas.png)
+  Personas, allows you to provide system propmt to the model. You can change the persona as you go, so a question would be answered by currently selected persona and previous answers (from different personas as well) will be included into the context.
+</p>
+
+<p align="center">
+  ![RAG](docs/images/rag.png)
+  Chromadb integration allows vectorizing files and then "talking to them".
+</p>
+
+<p align="center">
+  ![RAG upload](docs/images/rag_upload.png)
+  There are 2 options to index files - you can specify directory path (it is host directory, so if you host the app on different machine you'll have to upload your files there) or manually upload files.
+</p>
+
+<p align="center">
+  ![Url questions](docs/images/url.png)
+  You can ask questions about website contents. This feature is rather simple currently so watchout for context overflow.
+</p>
+
+## Running
 
 ### Docker
 
@@ -78,7 +107,7 @@ CHROMA_SERVER=http://localhsot:11435 #chroma url
 OLLAMA_SERVER=http://localhost:11434 #ollama url
 SERVER_PORT=3000 #port on which server will run
 
-# I wouldn't touch those for now 
+# I wouldn't touch those for now
 OLLAMA_API_BASE=api
 OLLAMA_API_TAGS=api/tags
 OLLAMA_API_CHAT=api/chat
