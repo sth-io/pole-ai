@@ -112,6 +112,7 @@ const cleanAndExtendMsgs = (msg, i, length, extend) => {
   return {
     role: msg.role,
     content,
+    ...(msg.images ? { images: msg.images } : {}),
   };
 };
 
@@ -165,20 +166,23 @@ export const streamingChat = async (requestData, res) => {
       requestData.config
     );
 
+    const messageContext = msg.context ? `this is the context of the question: ${msg.context}.` : ''
+
     // Prepare request
-    const request = {
+    let request = {
       messages: [
         ...requestData.messages.map((elem, i) =>
           cleanAndExtendMsgs(elem, i, requestData.messages.length, [
             documents,
             websiteData,
+            messageContext,
           ])
         ),
       ],
       options: requestData.options ?? {},
       model: requestData.model,
     };
-    console.log(request);
+    console.log("request", request);
 
     // pass the prepared data to Ollama
     const url = `${config.ollama.server}/${config.ollama.api.chat}`;
@@ -186,6 +190,7 @@ export const streamingChat = async (requestData, res) => {
       const response = await axios.post(url, request, {
         responseType: "stream", // Set response type to stream
       });
+      response.data.pipe(res);
 
       // Set headers to indicate streaming
       res.setHeader("Content-Type", "application/json");
@@ -202,7 +207,7 @@ export const streamingChat = async (requestData, res) => {
         chunkStream.setEncoding("utf8"); // Set encoding to UTF-8
         const read = chunkStream.read();
         const json = JSON.parse(read);
-        collectedChunks += json.message.content; // Read and append chunk to collectedChunks
+        collectedChunks += json.response ? json.response : json.message.content; // Read and append chunk to collectedChunks
       });
 
       // Listen for 'end' event to finalize data collection and call AddMessage function
@@ -218,7 +223,6 @@ export const streamingChat = async (requestData, res) => {
           requestData.model
         );
       });
-      response.data.pipe(res);
     };
     try {
       await call();

@@ -32,7 +32,7 @@ export const chunkFallbackMechanism = (chunk) => {
   const match = reg.exec(chunk);
   if (match) {
     console.error("err", match[1]);
-    return match[1]
+    return match[1];
     // return match[1].replace(/\\/g, " ");
   } else return "";
 };
@@ -51,7 +51,7 @@ export async function readAllChunks(readableStream, callback) {
   async function parseChunk(chunk) {
     try {
       const json = JSON.parse(decodeURIComponent(chunk.trim()));
-      return json.message.content;
+      return json.response ? json.response : json.message.content;
     } catch (e) {
       return chunkFallbackMechanism(chunk);
     }
@@ -64,8 +64,8 @@ export async function readAllChunks(readableStream, callback) {
 
     if (done) break;
 
-    const decoded = new TextDecoder().decode(value)
-    const chunk = await parseChunk(decoded)
+    const decoded = new TextDecoder().decode(value);
+    const chunk = await parseChunk(decoded);
 
     chunks.push(chunk);
 
@@ -81,12 +81,15 @@ export async function readAllChunks(readableStream, callback) {
  * @param {string} chatId - The ID of the chat
  * @param {Object} options - Additional options for the prompt message
  * @param {string} prompt - The content/text of the prompt message
+ * @param {Object} file - {image: base64, name: string} | { context: string, name: string}
  * @return {Array} A new array with the appended prompt message object
  */
-export const promptToChat = (chat, chatId, prompt) => {
+export const promptToChat = (chat, chatId, prompt, file) => {
+  console.log(file)
+
   return [
     ...chat,
-    { role: "user", content: prompt, stamp: Date.now(), chatId },
+    { role: "user", content: prompt, stamp: Date.now(), chatId, ...file },
   ];
 };
 

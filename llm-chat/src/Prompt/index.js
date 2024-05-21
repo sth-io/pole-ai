@@ -5,7 +5,8 @@ import IconButton from "@mui/material/IconButton";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import { ButtonIcon } from "../LayoutComponents/Button";
 import { FormStyled, ScrollToBottom } from "./styled";
-import { useChatStore, useCurrentAnswer } from "../Chat/chatContext";
+import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
+import { FileUploadComponent } from "./FileUpload";
 
 const ToggleAutoscroll = () => {
   const [autoScroll, setAutoScroll] = useCurrentAnswer((state) => [
@@ -14,7 +15,7 @@ const ToggleAutoscroll = () => {
   ]);
   return (
     <ScrollToBottom style={{ opacity: autoScroll ? 1 : 0.7 }}>
-      <ButtonIcon onClick={() => setAutoScroll(!autoScroll)}>
+      <ButtonIcon size="small" onClick={() => setAutoScroll(!autoScroll)}>
         <VerticalAlignBottomIcon />
       </ButtonIcon>
     </ScrollToBottom>
@@ -22,7 +23,10 @@ const ToggleAutoscroll = () => {
 };
 
 export const Prompt = ({ autoScroll, setAutoScroll }) => {
-  const [prompt, setPrompt] = useState("");
+  const { prompt, setPrompt } = usePrompt(({ prompt, setPrompt }) => ({
+    prompt,
+    setPrompt,
+  }));
   const { send, chat, toggleChatMessage } = useChatStore(
     ({ send, chat, toggleChatMessage }) => ({
       send,
@@ -83,6 +87,7 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
           <SendRoundedIcon />
         </IconButton>
         <ToggleAutoscroll />
+        <FileUploadComponent />
       </FormStyled>
     </div>
   );

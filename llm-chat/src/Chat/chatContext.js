@@ -24,7 +24,18 @@ export const useCurrentAnswer = create((set) => ({
   autoScroll: true,
   setAutoScroll: (value) => {
     set(() => ({ autoScroll: value }));
-  }
+  },
+}));
+
+export const usePrompt = create((set) => ({
+  prompt: "",
+  file: {},
+  setFile: (value) => {
+    set(() => ({ file: value }));
+  },
+  setPrompt: (value) => {
+    set(() => ({ prompt: value }));
+  },
 }));
 
 export const useChatStore = create((set, get) => ({
@@ -54,7 +65,7 @@ export const useChatStore = create((set, get) => ({
       set(() => ({
         options: {},
       }));
-      localStorage.setItem("options", "{}")
+      localStorage.setItem("options", "{}");
       return;
     }
     set((store) => {
@@ -110,9 +121,6 @@ export const useChatStore = create((set, get) => ({
     set(() => ({ model }));
     localStorage.setItem("model", model);
   },
-  inputHandler: (e) => {
-    set(() => ({ prompt: e.target.value }));
-  },
   setCollection: (collection) => {
     set(() => ({ collection }));
     localStorage.setItem("collection", collection);
@@ -152,10 +160,12 @@ export const useChatStore = create((set, get) => ({
   },
   send: async (question, withoutAppend, history) => {
     // convert prompt to visible chat
+    const file = usePrompt.getState().file
     const newState = promptToChat(
       removePreviousGenerations(history ?? get().chat),
       get().chatId,
-      question
+      question,
+      file
     );
     const persona = get().persona;
     const hasPersona =
@@ -171,6 +181,7 @@ export const useChatStore = create((set, get) => ({
         chat: responseToChat(get().chat, chunks),
       }));
     };
+
 
     await callChat(
       {

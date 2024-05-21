@@ -1,6 +1,19 @@
 import styled from "styled-components";
 import { colors } from "../LayoutComponents/theme";
 
+export const StyledImg = styled.img`
+  max-width: 400px;
+  cursor: pointer;
+  max-height: 150px;
+`;
+
+export const ImgContainer = styled.div`
+  background: ${colors.base};
+  display: inline-block;
+  padding: 5px;
+  border-radius: 5px;
+`;
+
 const msgBgs = {
   assistant: colors.secondary,
   user: colors.base,

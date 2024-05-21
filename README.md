@@ -66,6 +66,13 @@ While I did my best to make sure that all success paths work properly I cannot p
   You can ask questions about website contents. This feature is rather simple currently so watchout for context overflow.
 </p>
 
+<p align="center">
+  <img src="docs/images/multimodal.png" alt="url questions" align="center">
+</p>
+<p align="center">
+  If you're using vision models you can ask questions about images too!
+</p>
+
 ## Running
 
 ### Docker

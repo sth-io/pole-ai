@@ -40,7 +40,7 @@ const helmet = require("helmet");
 app.use(cors());
 
 app.use(helmet());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
