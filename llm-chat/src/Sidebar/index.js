@@ -10,7 +10,7 @@ import Person4OutlinedIcon from "@mui/icons-material/Person4Outlined";
 import SourceOutlinedIcon from "@mui/icons-material/SourceOutlined";
 import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
 
-import { Box } from "@mui/material";
+import { Box, styled } from "@mui/material";
 import { ModelPicker } from "../ModelPicker";
 import { ModelTuner } from "../ModelTuner";
 import { useChatStore } from "../Chat/chatContext";
@@ -19,6 +19,9 @@ import { trimText } from "../utils/text";
 import { colors } from "../LayoutComponents/theme";
 import packagejson from "../../package.json";
 import { SystemSettings } from "../System/systemSettings";
+
+const StyledAccordion = styled(Accordion)`
+`;
 
 const Sidebar = () => {
   const {
@@ -70,14 +73,18 @@ const Sidebar = () => {
         width: "385px",
       }}
     >
-      <p style={{ fontSize: 18, color: colors.base, margin: "0" }}>
+      <p style={{ fontSize: 18, color: '#000', margin: "0" }}>
         <span style={{ fontWeight: "bold" }}>pole</span>{" "}
-        <span style={{ color: colors.secondary }}>assistant</span>
+        <span style={{ color: colors.tertiary }}>assistant</span>
       </p>
-      <p style={{ color: colors.secondary, margin: "0 0 20px", fontSize: 12 }}>
+      <p style={{ color: colors.tertiary, margin: "0 0 20px", fontSize: 12 }}>
         v{packagejson.version}
       </p>
-      <Accordion onChange={() => panelSetter("model")} sx={{ p: "10px" }}>
+      <StyledAccordion
+        elevation="0"
+        onChange={() => panelSetter("model")}
+        sx={{ p: "10px" }}
+      >
         <ModelPicker
           getModels={getModels}
           models={models}
@@ -87,8 +94,8 @@ const Sidebar = () => {
           options={options}
           setOptions={setOptions}
         />
-      </Accordion>
-      <Accordion onChange={() => panelSetter("tuner")}>
+      </StyledAccordion>
+      <StyledAccordion elevation="0" onChange={() => panelSetter("tuner")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -105,8 +112,8 @@ const Sidebar = () => {
             setOptions={setOptions}
           />
         </AccordionDetails>
-      </Accordion>
-      <Accordion onChange={() => panelSetter("tuner")}>
+      </StyledAccordion>
+      <StyledAccordion elevation="0" onChange={() => panelSetter("tuner")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -118,8 +125,8 @@ const Sidebar = () => {
         <AccordionDetails>
           <Personas />
         </AccordionDetails>
-      </Accordion>
-      <Accordion onChange={() => panelSetter("files")}>
+      </StyledAccordion>
+      <StyledAccordion elevation="0" onChange={() => panelSetter("files")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -132,8 +139,8 @@ const Sidebar = () => {
         <AccordionDetails>
           <FileList trigger={panels.files} />
         </AccordionDetails>
-      </Accordion>
-      <Accordion onChange={() => panelSetter("history")}>
+      </StyledAccordion>
+      <StyledAccordion elevation="0" onChange={() => panelSetter("history")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -145,7 +152,7 @@ const Sidebar = () => {
         <AccordionDetails>
           <MessageList trigger={panels.history} />
         </AccordionDetails>
-      </Accordion>
+      </StyledAccordion>
       {/* <SystemSettings /> */}
     </Box>
   );

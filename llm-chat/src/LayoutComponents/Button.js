@@ -4,8 +4,8 @@ import { Button, styled } from "@mui/material";
 import { colors } from "./theme";
 
 const StyledIconButton = styled(IconButton)((props) => ({
-  background: props.transparent ? "transparent" : colors.base,
-  color: props.transparent ? colors.base : "#000",
+  background: props.transparent ? "transparent" : colors.accent,
+  color: props.transparent ? colors.accent : "#fff",
 
   "&:hover": {
     background: colors.accent,
@@ -14,8 +14,8 @@ const StyledIconButton = styled(IconButton)((props) => ({
 }));
 
 const StyledButton = styled(Button)((props) => ({
-  background: props.transparent ? "transparent" : colors.base,
-  color: props.transparent ? colors.base : "#000",
+  background: props.transparent ? "transparent" : colors.accent,
+  color: props.transparent ? colors.accent : "#fff",
 
   "&:hover": {
     background: colors.accent,

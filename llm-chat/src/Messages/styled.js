@@ -15,16 +15,21 @@ export const ImgContainer = styled.div`
 `;
 
 const msgBgs = {
-  assistant: colors.secondary,
+  assistant: 'transparent',
   user: colors.base,
-  system: "#e5e4e2",
+  system: 'transparent',
 };
 
 const msgColors = {
   assistant: "black",
-  user: "black",
+  user: "white",
   system: "#555555",
 };
+const msgBorders = {
+  assistant: 'transparent',
+  user: 'transparent',
+  system: "#555555",
+}
 
 const msgFloat = {
   assistant: "left",
@@ -46,6 +51,7 @@ export const Msg = styled.div`
   width: 100%;
   box-sizing: border-box;
   border-radius: 5px;
+  border: 1px solid ${({ role }) => msgBorders[role]};
 `;
 
 export const MsgOptions = styled.div`

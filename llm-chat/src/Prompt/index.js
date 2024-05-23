@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
-import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
+import ArrowRightRoundedIcon from '@mui/icons-material/ArrowRightRounded';
 import { ButtonIcon } from "../LayoutComponents/Button";
 import { FormStyled, ScrollToBottom } from "./styled";
 import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
+import { InputAdornment, InputBase, Paper } from "@mui/material";
+import { colors } from "../LayoutComponents/theme";
 
 const ToggleAutoscroll = () => {
   const [autoScroll, setAutoScroll] = useCurrentAnswer((state) => [
@@ -63,31 +66,44 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
           setPrompt("");
         }}
       >
-        <TextField
-          sx={{
-            ml: 1,
-            flex: 1,
-            background: "white",
-            borderRadius: "4px 0 0 4px",
+        <div
+          style={{
+            border: `1px solid ${colors.base}`,
+            borderRadius: "5px",
+            width: "100%",
+            display: "flex",
           }}
-          id="outlined-multiline-flexible"
-          multiline
-          maxRows={10}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={onKeys}
-          value={prompt}
-          variant="outlined"
-        />
-        <IconButton
-          variant="dashed"
-          type="submit"
-          sx={{ background: "white", borderRadius: "0 10px 10px 0", p: "10px" }}
-          aria-label="search"
         >
-          <SendRoundedIcon />
-        </IconButton>
-        <ToggleAutoscroll />
-        <FileUploadComponent />
+          <InputBase
+            sx={{
+              ml: 1,
+              flex: 1,
+              background: "white",
+            }}
+            multiline
+            maxRows={10}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={onKeys}
+            value={prompt}
+            variant="outlined"
+            startAdornment={<FileUploadComponent />}
+            endAdornment={
+              <InputAdornment position="end">
+                <ButtonIcon
+                  transparent
+                  size="small"
+                  type="submit"
+                  edge="end"
+                  sx={{
+                    m: "0 10px 0 0",
+                  }}
+                >
+                  <PlayArrowRoundedIcon />
+                </ButtonIcon>
+              </InputAdornment>
+            }
+          />
+        </div>
       </FormStyled>
     </div>
   );
