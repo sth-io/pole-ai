@@ -4,7 +4,7 @@ Is a tool meant for interactions with your offline LLM assitants.
 The name stands for "field" in Polish but using the English meaning works for me as well!
 
 <p align="center">
-  <img src="docs/images/pole.png" alt="messages" align="center">
+  <img src="docs/images/pole_1.png" alt="messages" align="center">
 </p>
 <p align="center">
   "pole" means field in Polish.  
@@ -18,56 +18,56 @@ While I did my best to make sure that all success paths work properly I cannot p
 # Overview
 
 <p align="center">
-  <img src="docs/images/ui.png" alt="pole ui" align="center">
+  <img src="docs/images/ui_1.png" alt="pole ui" align="center">
 </p>
 <p align="center">
   a view on the ui
 </p>
 
 <p align="center">
-  <img src="docs/images/messages.png" alt="messages" align="center">
+  <img src="docs/images/messages_1.png" alt="messages" align="center">
 </p>
 <p align="center">
   messages design, three icons on the right are (order top to bottom) - exclude message from context, diverege (start a new conversation from this point), regenerate (get a new answer to the previous question, using currently selected model)
 </p>
 
 <p align="center">
-  <img src="docs/images/model_tune.png" alt="model tune" align="center">
+  <img src="docs/images/model_tune_1.png" alt="model tune" align="center">
 </p>
 <p align="center">
   model options, hovering over the element shows a tooltip explaining the property. No value means it's using default ollama setup
 </p>
 
 <p align="center">
-  <img src="docs/images/personas.png" alt="personas" align="center">
+  <img src="docs/images/personas_1.png" alt="personas" align="center">
 </p>
 <p align="center">
   Personas, allows you to provide system propmt to the model. You can change the persona as you go, so a question would be answered by currently selected persona and previous answers (from different personas as well) will be included into the context.
 </p>
 
 <p align="center">
-  <img src="docs/images/rag.png" alt="rag" align="center">
+  <img src="docs/images/rag_1.png" alt="rag" align="center">
 </p>
 <p align="center">
   Chromadb integration allows vectorizing files and then "talking to them".
 </p>
 
 <p align="center">
-  <img src="docs/images/rag_upload.png" alt="rag upload" align="center">
+  <img src="docs/images/rag_upload_1.png" alt="rag upload" align="center">
 </p>
 <p align="center">
   There are 2 options to index files - you can specify directory path (it is host directory, so if you host the app on different machine you'll have to upload your files there) or manually upload files.
 </p>
 
 <p align="center">
-  <img src="docs/images/url.png" alt="url questions" align="center">
+  <img src="docs/images/url_1.png" alt="url questions" align="center">
 </p>
 <p align="center">
   You can ask questions about website contents. This feature is rather simple currently so watchout for context overflow.
 </p>
 
 <p align="center">
-  <img src="docs/images/multimodal.png" alt="url questions" align="center">
+  <img src="docs/images/multimodal_1.png" alt="url questions" align="center">
 </p>
 <p align="center">
   If you're using vision models you can ask questions about images too!

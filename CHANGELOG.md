@@ -1,4 +1,9 @@
-# 0.2.0 [22.05-2024]
+# 0.3.3 [01-06-2024]
+
+- Major visual revamp
+- Multiple usability tweaks
+
+# 0.2.0 [22-05-2024]
 
 - ability to use multimodal models. Image can be uploaded next to prompt window.
 - using the same feature as the multimodal image - users can upload text files for instant file analysis without vectorizing
