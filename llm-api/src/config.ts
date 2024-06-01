@@ -30,7 +30,8 @@ const ollama = {
 };
 
 const server = {
-  port: process.env.SERVER_PORT || 3000
+  port: process.env.server_port || 3000,
+  socketPort: process.env.scoket_port || 3001
 }
 
 

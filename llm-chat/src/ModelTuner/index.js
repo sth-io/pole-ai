@@ -24,6 +24,7 @@ const NumberControl = ({
   min,
   max,
   decimal,
+  step = 1
 }) => {
   const minmax = {};
   if (min) {
@@ -44,6 +45,7 @@ const NumberControl = ({
       <Slider
         value={value ? value / (decimal ?? 1) : ""}
         onChange={(e) => onChange(e.target.value * (decimal ?? 1))}
+        step={step}
         {...minmax}
       />
     </Box>

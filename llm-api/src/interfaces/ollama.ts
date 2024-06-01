@@ -1,11 +1,12 @@
 import axios from "axios";
-import { config } from "../config";
-import { AddMessage } from "./filestore";
-import { Readable } from "stream";
-import { jsonrepair } from "jsonrepair";
-import { ChromaModel } from "./chroma";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { load } from "cheerio";
+import { Readable } from "stream";
+import { config } from "../config";
+import { AddMessage } from "./filestore";
+import { jsonrepair } from "jsonrepair";
+import { ChromaModel } from "./chroma";
+import eventBus from "./eventBus";
 
 export const getModels = async (res) => {
   const url = `${config.ollama.server}/${config.ollama.api.tags}`;
@@ -66,19 +67,18 @@ export const pullWebsite = async (trigger, messages, options = {}) => {
   if (!trigger) {
     return "";
   }
-  // if (!options.lookForUrl) {
-  //   return;
-  // }
   const lastIndex = messages.length - 1;
   const current = messages[lastIndex];
 
   function findUrl(text) {
     const regex =
-      /\b(https?:\/\/[^\s]+(?:\/[^?#]+)?(?:\?(?:[^#]+)(?:&(?:[^=]+=[^&]+))*)?(?:#[^\s]*)?)?\b/gi;
-    return text.match(regex).filter((url) => url !== "");
+      /#(https?:\/\/[^\s]+(?:\/[^?#]+)?(?:\?(?:[^#]+)(?:&(?:[^=]+=[^&]+))*)?(?:#[^\s]*)?)?/gi;
+    return text.match(regex)?.filter((url) => url !== "");
   }
   const urls = findUrl(current.content);
-
+  if (!urls) {
+    return;
+  }
   if (urls.length === 0) {
     return;
   }
@@ -93,7 +93,9 @@ export const pullWebsite = async (trigger, messages, options = {}) => {
     // return NodeHtmlMarkdown.translate(content);
   };
 
-  const response = await axios.get(urls[0], { responseType: "text" });
+  const response = await axios.get(urls[0].substring(1), {
+    responseType: "text",
+  });
   const htmlContent = response.data;
   const body = extractBodyContent(htmlContent);
 
@@ -105,9 +107,11 @@ export const pullWebsite = async (trigger, messages, options = {}) => {
 
 const cleanAndExtendMsgs = (msg, i, length, extend) => {
   const shouldExtend = length - 1 === i;
-  const additionalData = extend.join(". ");
+  const additionalData = extend.filter((elem) => elem).join(". ");
   const content = shouldExtend
-    ? `${additionalData}, the question is: ${msg.content}`
+    ? `${additionalData ?? ""}${additionalData ? ", the question is: " : ""}${
+        msg.content
+      }`
     : msg.content;
   return {
     role: msg.role,
@@ -139,12 +143,11 @@ export const getData = async (collection, model, ragModel, question, limit) => {
   return systemPrompt;
 };
 
-export const streamingChat = async (requestData, res) => {
+export const streamingChat = async (requestData) => {
   try {
     // last msg
     const msg = requestData.messages[requestData.messages.length - 1];
-
-    // add message to storage
+    // add user message to storage
     if (!requestData.withoutAppend) {
       await AddMessage(msg, requestData.model);
     }
@@ -166,7 +169,9 @@ export const streamingChat = async (requestData, res) => {
       requestData.config
     );
 
-    const messageContext = msg.context ? `this is the context of the question: ${msg.context}.` : ''
+    const messageContext = msg.context
+      ? `this is the context of the question: ${msg.context}.`
+      : "";
 
     // Prepare request
     let request = {
@@ -190,14 +195,21 @@ export const streamingChat = async (requestData, res) => {
       const response = await axios.post(url, request, {
         responseType: "stream", // Set response type to stream
       });
-      response.data.pipe(res);
-
-      // Set headers to indicate streaming
-      res.setHeader("Content-Type", "application/json");
-      res.setHeader("Transfer-Encoding", "chunked");
+      // response.data.pipe(res);
 
       // Variable to accumulate all chunks into a single string
       let collectedChunks = "";
+
+      let result: {
+        model?: string;
+        created_at?: string;
+        total_duration?: number;
+        load_duration?: number;
+        prompt_eval_count?: number;
+        prompt_eval_duration?: number;
+        eval_count?: number;
+        eval_duration?: number;
+      } = {};
 
       // Transform each chunk to a readable stream and accumulate them
       response.data.on("data", (chunk) => {
@@ -208,6 +220,32 @@ export const streamingChat = async (requestData, res) => {
         const read = chunkStream.read();
         const json = JSON.parse(read);
         collectedChunks += json.response ? json.response : json.message.content; // Read and append chunk to collectedChunks
+        if (json.done) {
+          console.log("answer done");
+          result = {
+            model: json.model,
+            created_at: json.created_at,
+            total_duration: json.total_duration,
+            load_duration: json.load_duration,
+            prompt_eval_count: json.prompt_eval_count,
+            prompt_eval_duration: json.prompt_eval_duration,
+            eval_count: json.eval_count,
+            eval_duration: json.eval_duration,
+          };
+          eventBus.emit("chat:answer", {
+            chatId: msg.chatId,
+            message: {
+              done: true,
+              content: collectedChunks,
+              ...result,
+            },
+          });
+        } else {
+          eventBus.emit("chat:answer", {
+            chatId: msg.chatId,
+            message: { content: collectedChunks },
+          });
+        }
       });
 
       // Listen for 'end' event to finalize data collection and call AddMessage function
@@ -215,6 +253,7 @@ export const streamingChat = async (requestData, res) => {
         // Call AddMessage function with the collected data
         await AddMessage(
           {
+            ...result,
             role: "assistant",
             stamp: Date.now(),
             chatId: msg.chatId,

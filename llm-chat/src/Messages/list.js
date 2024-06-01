@@ -110,7 +110,7 @@ export const MessageList = ({ trigger }) => {
     <div style={{ padding: "0 0 40px 0" }}>
       <Divider
         textAlign="left"
-        sx={{ p: "10px 0 10px 0", background: colors.base }}
+        sx={{ p: "10px 0 10px 0", background: colors.base, color: '#fff' }}
       >
         ♥ favourites
       </Divider>

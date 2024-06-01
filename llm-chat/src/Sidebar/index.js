@@ -19,9 +19,9 @@ import { trimText } from "../utils/text";
 import { colors } from "../LayoutComponents/theme";
 import packagejson from "../../package.json";
 import { SystemSettings } from "../System/systemSettings";
+import { Loader } from "../LayoutComponents/Loader";
 
-const StyledAccordion = styled(Accordion)`
-`;
+const StyledAccordion = styled(Accordion)``;
 
 const Sidebar = () => {
   const {
@@ -73,7 +73,8 @@ const Sidebar = () => {
         width: "385px",
       }}
     >
-      <p style={{ fontSize: 18, color: '#000', margin: "0" }}>
+      <Loader />
+      <p style={{ fontSize: 18, color: "#000", margin: "0" }}>
         <span style={{ fontWeight: "bold" }}>pole</span>{" "}
         <span style={{ color: colors.tertiary }}>assistant</span>
       </p>

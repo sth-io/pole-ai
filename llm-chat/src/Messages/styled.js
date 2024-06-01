@@ -15,43 +15,61 @@ export const ImgContainer = styled.div`
 `;
 
 const msgBgs = {
-  assistant: 'transparent',
-  user: colors.base,
-  system: 'transparent',
+  assistant: "transparent",
+  user: "transparent",
+  system: "transparent",
 };
 
 const msgColors = {
   assistant: "black",
-  user: "white",
+  user: "#555555",
   system: "#555555",
 };
 const msgBorders = {
-  assistant: 'transparent',
-  user: 'transparent',
-  system: "#555555",
-}
+  assistant: "transparent",
+  user: "#5297AA",
+  system: "transparent",
+};
 
 const msgFloat = {
-  assistant: "left",
+  assistant: "none",
   user: "right",
   system: "center",
 };
 
 const msgPadding = {
-  assistant: "10px 40px 10px 00px",
-  user: "10px 40px 10px 40px",
+  assistant: "0px 40px 10px 00px",
+  user: "20px 40px 0px 40px",
   system: "10px 20px",
 };
 
 export const Msg = styled.div`
+  word-wrap: anywhere;
   background: ${({ role }) => msgBgs[role]};
-  float: ${({ role }) => msgFloat[role]};
   color: ${({ role }) => msgColors[role]};
   padding: ${({ role }) => (role === "system" ? "10px" : "0 10px")};
-  width: 100%;
+  display: inline-block;
   box-sizing: border-box;
-  border-radius: 5px;
   border: 1px solid ${({ role }) => msgBorders[role]};
+  border-radius: 4px;
+
+  ${({ role }) =>
+    role === "assistant"
+      ? `
+  width: 100%;
+  `
+      : ""}
+
+  ${({ role }) =>
+    role === "user"
+      ? `
+  
+  & > p {
+    padding: 5px 0;
+    margin: 0;
+  }
+  `
+      : ""}
 `;
 
 export const MsgOptions = styled.div`
@@ -67,12 +85,20 @@ export const MsgOptions = styled.div`
 
 export const MsgContainer = styled.div`
   padding: ${({ role }) => msgPadding[role]};
-  clear: both;
   position: relative;
+  max-width: 100%;
 
   &:hover ${MsgOptions} {
     opacity: 1;
   }
+
+  ${({ role }) =>
+    role === "user"
+      ? `
+    display: flex;
+    justify-content: flex-end;  
+  `
+      : ""}
 `;
 
 export const ContainerStyled = styled.div`

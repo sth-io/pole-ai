@@ -3,7 +3,7 @@ import { createTheme, ThemeProvider, styled } from "@mui/material/styles";
 export const colors = {
   // base: '#F6D776',
 //   base: "rgba(246,215,118, 0.4)",
-base: '#8baa89',
+base: '#6BAA52',
   secondary: "#EEEEEE",
   tertiary: "#647D87",
   accent: "#8baa89",

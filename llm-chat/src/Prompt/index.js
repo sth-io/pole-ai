@@ -1,48 +1,30 @@
-import React, { useState } from "react";
-import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
-import TextField from "@mui/material/TextField";
-import IconButton from "@mui/material/IconButton";
-import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
-import ArrowRightRoundedIcon from '@mui/icons-material/ArrowRightRounded';
+import React from "react";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { ButtonIcon } from "../LayoutComponents/Button";
-import { FormStyled, ScrollToBottom } from "./styled";
-import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
+import { FormStyled } from "./styled";
+import { send, useChatStore, usePrompt, useSocket } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
-import { InputAdornment, InputBase, Paper } from "@mui/material";
+import { InputAdornment, InputBase } from "@mui/material";
 import { colors } from "../LayoutComponents/theme";
 
-const ToggleAutoscroll = () => {
-  const [autoScroll, setAutoScroll] = useCurrentAnswer((state) => [
-    state.autoScroll,
-    state.setAutoScroll,
-  ]);
-  return (
-    <ScrollToBottom style={{ opacity: autoScroll ? 1 : 0.7 }}>
-      <ButtonIcon size="small" onClick={() => setAutoScroll(!autoScroll)}>
-        <VerticalAlignBottomIcon />
-      </ButtonIcon>
-    </ScrollToBottom>
-  );
-};
-
-export const Prompt = ({ autoScroll, setAutoScroll }) => {
+export const Prompt = () => {
   const { prompt, setPrompt } = usePrompt(({ prompt, setPrompt }) => ({
     prompt,
     setPrompt,
   }));
-  const { send, chat, toggleChatMessage } = useChatStore(
-    ({ send, chat, toggleChatMessage }) => ({
-      send,
+  const { chat, toggleChatMessage } = useChatStore(
+    ({ chat, toggleChatMessage }) => ({
       chat,
       toggleChatMessage,
     })
   );
+  // const send = useSocket((state) => state.send);
 
   const onKeys = (e) => {
     // use enter/return to send the message (doesn't trigger on shift+enter)
     if ((e.key === "Enter" || e.key === "Return") && e.shiftKey == false) {
       e.preventDefault();
-      send(prompt);
+      send(prompt)
       setPrompt("");
     }
 
@@ -62,7 +44,7 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
         sx={{ marginLeft: 0 }}
         onSubmit={(e) => {
           e.preventDefault();
-          send(prompt);
+          // send(prompt);
           setPrompt("");
         }}
       >
@@ -76,9 +58,10 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
         >
           <InputBase
             sx={{
-              ml: 1,
               flex: 1,
+              borderRadius: "5px",
               background: "white",
+              p: "10px 0 10px 0",
             }}
             multiline
             maxRows={10}
@@ -86,16 +69,23 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
             onKeyDown={onKeys}
             value={prompt}
             variant="outlined"
-            startAdornment={<FileUploadComponent />}
+            startAdornment={
+              <InputAdornment
+                position="start"
+                style={{ alignSelf: "flex-end" }}
+              >
+                <FileUploadComponent />{" "}
+              </InputAdornment>
+            }
             endAdornment={
-              <InputAdornment position="end">
+              <InputAdornment position="end" style={{ alignSelf: "flex-end" }}>
                 <ButtonIcon
                   transparent
                   size="small"
                   type="submit"
                   edge="end"
                   sx={{
-                    m: "0 10px 0 0",
+                    m: "0 10px 22px 0",
                   }}
                 >
                   <PlayArrowRoundedIcon />

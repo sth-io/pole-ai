@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-RUN REACT_APP_API=$REACT_APP_API npm run build
+RUN REACT_APP_API=$REACT_APP_API REACT_APP_SOCKET=$REACT_APP_SOCKET npm run build
 
 FROM --platform=linux/amd64 nginx:alpine
 COPY --from=base /app/build /usr/share/nginx/html
