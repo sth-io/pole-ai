@@ -1,4 +1,9 @@
-import { createConversation, handleIndexPath } from "./src/api/files";
+import { Server } from "socket.io";
+import cors from "cors";
+import path from "path";
+import multer from "multer";
+import { createServer } from "http";
+import { handleIndexPath } from "./src/api/files";
 import { config } from "./src/config";
 import { ChromaModel } from "./src/interfaces/chroma";
 import {
@@ -7,14 +12,13 @@ import {
   RetrieveConversation,
   STORAGES,
   cleanDir,
+  editElement,
   toggleFav,
 } from "./src/interfaces/filestore";
 import { getMeta, getModels, streamingChat } from "./src/interfaces/ollama";
-import cors from "cors";
-import path from "path";
-import multer from "multer";
 import { Persona } from "./src/api/Personas";
 import { Messages } from "./src/api/Messages";
+import eventBus from "./src/interfaces/eventBus";
 
 console.log("[sys] initialising directories");
 InitStore();
@@ -35,12 +39,13 @@ const bodyParser = require("body-parser");
 const app = express();
 const server = require("http").Server(app);
 const port = config.server.port;
+const socketPort = config.server.socketPort;
 const helmet = require("helmet");
 
 app.use(cors());
 
 app.use(helmet());
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -101,7 +106,7 @@ app.post("/api/chat", async (req, res) => {
 
   res.status(200);
   try {
-    await streamingChat(req.body, res);
+    await streamingChat(req.body);
   } catch (e) {
     console.log("failed", e.message);
   }
@@ -245,4 +250,48 @@ server.listen(port, (err) => {
 `);
 });
 
+const httpServer = createServer();
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+eventBus.on("chat:answer", (message) => {
+  io.to(message.chatId).emit("chat:answer", message.message);
+});
+
+io.on("connection", (ws) => {
+  ws.on("chat:q", (message) => {
+    console.log("[chat:q]: message", message);
+    streamingChat(message);
+  });
+
+  ws.on("join", (chatId) => {
+    console.log("joined", chatId);
+    ws.join(chatId);
+  });
+  ws.on("leave", (chatId) => {
+    console.log("left", chatId);
+    ws.leave(chatId);
+  });
+
+  ws.on("message:toggle", ({ chatId, element, value }) => {
+    const filePath = `${STORAGES().messages}/${chatId}.json`;
+    editElement(filePath, "stamp", element, "filtered", value);
+  });
+});
+
+io.listen(socketPort as number);
+console.log(`
+  [socket port] ${socketPort}
+`);
+
 module.exports = server;
+
+// emit("message:toggle", {
+//   chatId: get().chatId,
+//   element: msg.timestamp,
+//   value: !msg.filtered,
+// })

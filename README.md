@@ -126,15 +126,47 @@ To be updated
 Setup is rather strightforward, you should run `npm i` and once it's done `npm run build` this should create `build` directory which contains `.env` file.
 
 ```
-CHROMA_SERVER=http://localhsot:11435 #chroma url
-OLLAMA_SERVER=http://localhost:11434 #ollama url
-SERVER_PORT=3000 #port on which server will run
+services:
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
+    restart: unless-stopped
+    environment:
+      - IS_PERSISTENT=TRUE
+    volumes:
+      # Default configuration for persist_directory in chromadb/config.py
+      # Currently it's located in "/chroma/chroma/"
+      - /opt/chroma:/chroma/chroma/
+    ports:
+      - 8101:8000
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8101/api/v1/heartbeat" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-# I wouldn't touch those for now
-OLLAMA_API_BASE=api
-OLLAMA_API_TAGS=api/tags
-OLLAMA_API_CHAT=api/chat
-OLLAMA_API_GENERATE=api/generate
+  pole-api:
+    image: kweg/pole-api:0.3.3
+    restart: unless-stopped
+    volumes:
+      - /data/db:/usr/src/app/db
+      - /data/uploads:/uploads
+    environment:
+      NODE_ENV: production
+      CHROMA_SERVER: http://localhost:8101
+      OLLAMA_SERVER: http://localhost:11434
+    ports:
+      - 6550:3000 # REST API
+      - 6552:3001 # Sockets API
+
+  pole-chat:
+    restart: unless-stopped
+    image: kweg/pole-chat:0.3.3
+    environment:
+      NODE_ENV: production
+      REACT_APP_API: http://localhost:6550
+      REACT_APP_SOCKET: http://localhost:6552
+    ports:
+      - 6551:80
 ```
 
 ### Running

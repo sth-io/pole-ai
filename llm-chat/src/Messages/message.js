@@ -13,10 +13,10 @@ import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
 import CachedIcon from "@mui/icons-material/Cached";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import Tooltip from "@mui/material/Tooltip";
-import { Container, Modal, Paper } from "@mui/material";
-import { LightAsync as SyntaxHighlighter } from "react-syntax-highlighter";
-import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { Chip, Container, Modal, Paper, Stack } from "@mui/material";
+import { Highlighter } from "rc-highlight";
 import { trimText } from "../utils/text";
+import { Alternatives } from "./Alternatives";
 
 const modalStyle = {
   position: "absolute",
@@ -27,6 +27,44 @@ const modalStyle = {
   boxShadow: 24,
   padding: 1,
 };
+
+const nanoToS = (time) => {
+  const value = time / 1000000000;
+  if (parseInt(value) !== value) {
+    return value.toFixed(1);
+  }
+  return value;
+};
+
+export const MessageStats = ({ message }) => (
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "10px",
+      justifyContent: "flex-end",
+    }}
+  >
+    {message.load_duration && (
+      <Chip
+        size="small"
+        label={`
+                  tokens: ${message.eval_count},
+                  load: ${nanoToS(message.load_duration)}s,
+                  eval: ${nanoToS(message.prompt_eval_duration)}s 
+                  total: ${nanoToS(message.total_duration)}s,
+                  ≈${(
+                    message.eval_count / nanoToS(message.total_duration)
+                  ).toFixed(1)}t/s`}
+        variant="outlined"
+      />
+    )}
+    {message.model && (
+      <Chip size="small" label={`${message.model}`} variant="outlined" />
+    )}
+    <Alternatives alternatives={message.alternatives} />
+  </div>
+);
 
 const ConversationImage = ({ message }) => {
   const [open, setOpen] = useState(false);
@@ -82,12 +120,12 @@ const ConversationText = ({ message }) => {
               code(props) {
                 const { children, className, node, ...rest } = props;
                 return (
-                  <SyntaxHighlighter
+                  <Highlighter
                     {...rest}
-                    PreTag="div"
-                    children={String(children).replace(/\n$/, "")}
+                    style={{ display: "inline-block" }}
+                    code={String(children).replace(/\n$/, "")}
                     language="javascript"
-                    style={monokaiSublime}
+                    copyToClipBoard={children && children.length > 100}
                   />
                 );
               },
@@ -97,10 +135,11 @@ const ConversationText = ({ message }) => {
           </ReactMarkdown>
 
           <p
-            style={{ textAlign: "center", cursor: 'pointer' }}
+            style={{ textAlign: "center", cursor: "pointer" }}
             onClick={() => setOpen((open) => !open)}
           >
-            {message.context.length > 200 && `[ click to ${open ? "collapse" : "expand"} ]`}
+            {message.context.length > 200 &&
+              `[ click to ${open ? "collapse" : "expand"} ]`}
           </p>
         </ImgContainer>
       </MsgContainer>
@@ -130,12 +169,12 @@ export const Message = React.memo(
                 code(props) {
                   const { children, className, node, ...rest } = props;
                   return (
-                    <SyntaxHighlighter
+                    <Highlighter
                       {...rest}
-                      PreTag="div"
-                      children={String(children).replace(/\n$/, "")}
+                      style={{ display: "inline-block" }}
+                      code={String(children).replace(/\n$/, "")}
                       language="javascript"
-                      style={monokaiSublime}
+                      copyToClipBoard={children && children.length > 100}
                     />
                   );
                 },
@@ -144,6 +183,7 @@ export const Message = React.memo(
               {message.content}
             </ReactMarkdown>
             {children}
+            {message.role === "assistant" && <MessageStats message={message} />}
           </Msg>
           <MsgOptions>
             <Tooltip

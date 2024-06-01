@@ -58,6 +58,8 @@ export const ManagePersona = ({ title = "add persona", init }) => {
           startIcon={<PersonAddAlt1OutlinedIcon />}
           variant="outlined"
           onClick={() => setOpen(true)}
+          fullWidth
+          sx={{m: '15px 0 0 0'}}
         >
           add persona
         </ButtonSth>

@@ -84,8 +84,15 @@ export const FileUploadComponent = () => {
   };
 
   return (
-    <ScrollToBottom>
-      <ButtonIcon onClick={() => ref.current?.click()} size="small">
+    <>
+      <ButtonIcon
+        sx={{
+          m: "0 0 22px 10px",
+        }}
+        onClick={() => ref.current?.click()}
+        transparent
+        size="small"
+      >
         {file.context && <FilePresentRoundedIcon />}
         {file.images && <VideoFileRoundedIcon />}
         {!(file.context || file.images) && <FileUploadRoundedIcon />}
@@ -96,6 +103,6 @@ export const FileUploadComponent = () => {
         onChange={handleFileChange}
         style={{ display: "none" }}
       />
-    </ScrollToBottom>
+    </>
   );
 };

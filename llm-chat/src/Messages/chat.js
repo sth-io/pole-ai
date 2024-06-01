@@ -1,13 +1,91 @@
-import { Box, Typography } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Paper,
+  Stack,
+  Typography,
+  styled,
+} from "@mui/material";
+import React, { useEffect, useRef } from "react";
 import { Message } from "./message";
 import { ContainerStyled } from "./styled";
 import { removePreviousGenerations } from "./utils";
 import { useChatStore, useCurrentAnswer } from "../Chat/chatContext";
 import { API } from "./api";
+import { trimText } from "../utils/text";
+import { Loader } from "../LayoutComponents/Loader";
+
+const StyledStack = styled(Stack)`
+  gap: 10px;
+  @media (max-width: 1024px) {
+    flex-direction: column;
+  }
+`;
+
+const SystemHello = () => {
+  const { personas, setPersona } = useChatStore(({ personas, setPersona }) => ({
+    personas,
+    setPersona,
+  }));
+  return (
+    <Message
+      message={{
+        role: "system",
+        content: "",
+      }}
+    >
+      <Paper elevation={0} sx={{ p: 2 }}>
+        {personas.length > 0 ? `Choose` : `Create`} a Persona to customize your
+        interaction and introduce new personas for an enhanced conversational
+        experience
+      </Paper>
+      {personas.length > 0 && (
+        <StyledStack direction={"row"} justifyContent={"center"}>
+          {personas.slice(-3).map((persona) => (
+            <Card
+              key={persona.title}
+              onClick={() => {
+                setPersona(persona.title);
+              }}
+              elevation={0}
+              sx={{
+                minWidth: "33%",
+                background: "rgba(0,0,0,0.04)",
+                cursor: "pointer",
+              }}
+            >
+              <CardContent>
+                <Typography
+                  sx={{ fontSize: 14, textAlign: "center" }}
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  {persona.title}
+                </Typography>
+                <Typography variant="body2">
+                  {trimText(persona.content, 100)}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </StyledStack>
+      )}
+
+      <Paper elevation={0} sx={{ p: 2 }}>
+        Choose File to ask the chat about your documents, or simply start
+        chatting...
+      </Paper>
+    </Message>
+  );
+};
 
 const CurrentAnswer = ({ contentRef }) => {
-  const currentAnswer = useCurrentAnswer((state) => state.currentAnswer);
+  const chat = useChatStore((state) => state.chat);
+  const { currentAnswer, questionSend } = useCurrentAnswer((state) => ({
+    currentAnswer: state.currentAnswer,
+    questionSend: state.questionSend,
+  }));
   const [autoScroll, setAutoScroll] = useCurrentAnswer((state) => [
     state.autoScroll,
     state.setAutoScroll,
@@ -53,8 +131,15 @@ const CurrentAnswer = ({ contentRef }) => {
         contentRef.current.scrollTop = scrollHeight;
       }
     }
-  }, [currentAnswer]);
+  }, [currentAnswer, chat]);
 
+  if (!currentAnswer && questionSend) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: '20px' }}>
+        <Loader />
+      </div>
+    );
+  }
   return currentAnswer ? (
     <Message message={{ content: currentAnswer, role: "assistant" }} />
   ) : null;
@@ -106,25 +191,7 @@ export const Chat = React.memo(() => {
       sx={{ overflow: "auto", width: "100%", paddingTop: "0px", flex: 1 }}
     >
       <ContainerStyled>
-        {chat.length === 0 && (
-          <Message
-            message={{
-              role: "system",
-              content: "",
-            }}
-          >
-            <Typography sx={{ p: "0 0 20px" }}>
-              This is the begining of the conversation.
-            </Typography>
-            <Typography sx={{ p: "0 0 20px" }}>
-              Choose Persona to customize your interaction and introduce new
-              personas for an enhanced conversational experience
-            </Typography>
-            <Typography sx={{ p: "0 0 20px" }}>
-              Choose File to ask the chat about your documents
-            </Typography>
-          </Message>
-        )}
+        {chat.length === 0 && <SystemHello />}
         {removePreviousGenerations(chat)
           .filter((item) => item.role !== "system")
           .map((msg, i) => (

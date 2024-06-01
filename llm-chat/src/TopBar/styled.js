@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { colors } from '../LayoutComponents/theme';
 
 export const TopBarContent = styled.div`
 margin: auto;
@@ -16,5 +17,4 @@ export const TopBarStyled = styled.div`
   margin: auto;
   height: 50px;
   z-index: 300;
-  background: #000;
 `

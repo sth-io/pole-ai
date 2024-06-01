@@ -51,9 +51,9 @@ export async function readAllChunks(readableStream, callback) {
   async function parseChunk(chunk) {
     try {
       const json = JSON.parse(decodeURIComponent(chunk.trim()));
-      return json.response ? json.response : json.message.content;
+      return json;
     } catch (e) {
-      return chunkFallbackMechanism(chunk);
+      return chunkFallbackMechanism({ message: { content: chunk } });
     }
   }
 
@@ -67,10 +67,14 @@ export async function readAllChunks(readableStream, callback) {
     const decoded = new TextDecoder().decode(value);
     const chunk = await parseChunk(decoded);
 
-    chunks.push(chunk);
+    if (chunk.message) {
+      chunks.push(chunk.message.content);
+    } else {
+      console.error('e', chunk)
+    }
 
     // Call the callback function to update the state incrementally
-    callback(chunks.join(""));
+    callback({ ...chunk, message: { content: chunks.join("") } });
   }
 }
 
@@ -85,7 +89,6 @@ export async function readAllChunks(readableStream, callback) {
  * @return {Array} A new array with the appended prompt message object
  */
 export const promptToChat = (chat, chatId, prompt, file) => {
-  console.log(file)
 
   return [
     ...chat,
@@ -100,10 +103,14 @@ export const promptToChat = (chat, chatId, prompt, file) => {
  * @param {string} chunks - The content of the response message
  * @return {Array} A new array with the response message added
  */
-export const responseToChat = (chat, chunks) => {
+export const responseToChat = (chat, response) => {
   return [
     ...chat,
-    { role: "assistant", stamp: Date.now(), content: `${chunks}` },
+    {
+      ...response,
+      role: "assistant",
+      stamp: Date.now(),
+    },
   ];
 };
 
@@ -181,12 +188,11 @@ export const updateUrl = (paramKey, paramValue) => {
 };
 
 export const callChat = async (
-  { messages, model, collection, ragOptions, options },
-  chunkCallback,
-  fullCalback,
+  { messages, model, collection, ragOptions, options, chatId },
   withoutAppend
 ) => {
-  const response = await API.sendChat({
+  await API.sendChat({
+    chatId,
     messages,
     model,
     options,
@@ -194,12 +200,4 @@ export const callChat = async (
     ragOptions,
     withoutAppend,
   });
-  let chunks = "";
-
-  await readAllChunks(response.body, (newContent) => {
-    chunkCallback(newContent);
-    chunks = newContent;
-  });
-
-  fullCalback(chunks);
 };

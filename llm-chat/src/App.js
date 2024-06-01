@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { ThemeProvider } from "@mui/material/styles";
 import Sidebar from "./Sidebar";
-import { theme } from "./LayoutComponents/theme";
+import { colors, theme } from "./LayoutComponents/theme";
 import { TopBar } from "./TopBar";
 import { Prompt } from "./Prompt";
 import { Chat } from "./Messages/chat";
@@ -11,6 +11,9 @@ import Drawer from "@mui/material/Drawer";
 import { ButtonSth } from "./LayoutComponents/Button";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import { useChatStore } from "./Chat/chatContext";
+import { Modal, Paper } from "@mui/material";
+import { FlowBuilder } from "./RagFlow";
+import { Sockets } from "./Sockets";
 
 const drawerWidth = 400;
 
@@ -53,6 +56,7 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <Sockets />
       <Box sx={{ display: "flex" }}>
         <Box
           component="nav"
@@ -68,11 +72,10 @@ function App() {
             }}
             sx={{
               display: { xs: "block", sm: "block", md: "none" },
-              background: "transparent",
               "& .MuiDrawer-paper": {
                 bosmizing: "border-box",
                 width: drawerWidth,
-                background: "#000",
+                background: "#fff",
               },
             }}
           >
@@ -91,9 +94,10 @@ function App() {
             sx={{
               display: { xs: "none", sm: "none", md: "block" },
               "& .MuiDrawer-paper": {
-                background: "transparent",
+                background: 'transparent',
                 bosmizing: "border-box",
                 width: drawerWidth,
+                border: "none",
               },
             }}
             open
@@ -110,12 +114,19 @@ function App() {
           }}
         >
           <TopBar setMenuOpen={handleDrawerToggle} />
-          <MainContainer style={{ height: `${windowHeight - 50}px` }}>
+          <MainContainer style={{ height: `${windowHeight - 80}px` }}>
             <Chat />
             <Prompt />
           </MainContainer>
         </Box>
       </Box>
+      <Modal
+        open={false}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+       <FlowBuilder /> 
+      </Modal>
     </ThemeProvider>
   );
 }

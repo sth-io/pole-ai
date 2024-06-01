@@ -11,6 +11,7 @@ services:
 
     ports:
       - 3001:3000
+      - 3002:3001
 
   pole-chat:
     build:
@@ -18,5 +19,6 @@ services:
     environment:
       NODE_ENV: production
       REACT_APP_API: http://192.168.0.40:3001
+      REACT_APP_SOCKET: http://192.168.0.40:3002
     ports:
       - 3000:80

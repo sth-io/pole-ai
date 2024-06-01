@@ -72,7 +72,8 @@ export const OPTIONS = {
     label: 'context size',
     type: "Number",
     min: 1024,
-    max: 70000,
+    max: 128000,
+    step: 1024,
     defaultValue: 35000,
     tooltip: `sets the context window size, this controls how many tokens the LLM can use as context to generate the next token`
   }

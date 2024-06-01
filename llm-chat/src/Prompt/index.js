@@ -1,45 +1,30 @@
-import React, { useState } from "react";
-import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
-import TextField from "@mui/material/TextField";
-import IconButton from "@mui/material/IconButton";
-import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import React from "react";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { ButtonIcon } from "../LayoutComponents/Button";
-import { FormStyled, ScrollToBottom } from "./styled";
-import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
+import { FormStyled } from "./styled";
+import { send, useChatStore, usePrompt, useSocket } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
+import { InputAdornment, InputBase } from "@mui/material";
+import { colors } from "../LayoutComponents/theme";
 
-const ToggleAutoscroll = () => {
-  const [autoScroll, setAutoScroll] = useCurrentAnswer((state) => [
-    state.autoScroll,
-    state.setAutoScroll,
-  ]);
-  return (
-    <ScrollToBottom style={{ opacity: autoScroll ? 1 : 0.7 }}>
-      <ButtonIcon size="small" onClick={() => setAutoScroll(!autoScroll)}>
-        <VerticalAlignBottomIcon />
-      </ButtonIcon>
-    </ScrollToBottom>
-  );
-};
-
-export const Prompt = ({ autoScroll, setAutoScroll }) => {
+export const Prompt = () => {
   const { prompt, setPrompt } = usePrompt(({ prompt, setPrompt }) => ({
     prompt,
     setPrompt,
   }));
-  const { send, chat, toggleChatMessage } = useChatStore(
-    ({ send, chat, toggleChatMessage }) => ({
-      send,
+  const { chat, toggleChatMessage } = useChatStore(
+    ({ chat, toggleChatMessage }) => ({
       chat,
       toggleChatMessage,
     })
   );
+  // const send = useSocket((state) => state.send);
 
   const onKeys = (e) => {
     // use enter/return to send the message (doesn't trigger on shift+enter)
     if ((e.key === "Enter" || e.key === "Return") && e.shiftKey == false) {
       e.preventDefault();
-      send(prompt);
+      send(prompt)
       setPrompt("");
     }
 
@@ -59,35 +44,56 @@ export const Prompt = ({ autoScroll, setAutoScroll }) => {
         sx={{ marginLeft: 0 }}
         onSubmit={(e) => {
           e.preventDefault();
-          send(prompt);
+          // send(prompt);
           setPrompt("");
         }}
       >
-        <TextField
-          sx={{
-            ml: 1,
-            flex: 1,
-            background: "white",
-            borderRadius: "4px 0 0 4px",
+        <div
+          style={{
+            border: `1px solid ${colors.base}`,
+            borderRadius: "5px",
+            width: "100%",
+            display: "flex",
           }}
-          id="outlined-multiline-flexible"
-          multiline
-          maxRows={10}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={onKeys}
-          value={prompt}
-          variant="outlined"
-        />
-        <IconButton
-          variant="dashed"
-          type="submit"
-          sx={{ background: "white", borderRadius: "0 10px 10px 0", p: "10px" }}
-          aria-label="search"
         >
-          <SendRoundedIcon />
-        </IconButton>
-        <ToggleAutoscroll />
-        <FileUploadComponent />
+          <InputBase
+            sx={{
+              flex: 1,
+              borderRadius: "5px",
+              background: "white",
+              p: "10px 0 10px 0",
+            }}
+            multiline
+            maxRows={10}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={onKeys}
+            value={prompt}
+            variant="outlined"
+            startAdornment={
+              <InputAdornment
+                position="start"
+                style={{ alignSelf: "flex-end" }}
+              >
+                <FileUploadComponent />{" "}
+              </InputAdornment>
+            }
+            endAdornment={
+              <InputAdornment position="end" style={{ alignSelf: "flex-end" }}>
+                <ButtonIcon
+                  transparent
+                  size="small"
+                  type="submit"
+                  edge="end"
+                  sx={{
+                    m: "0 10px 22px 0",
+                  }}
+                >
+                  <PlayArrowRoundedIcon />
+                </ButtonIcon>
+              </InputAdornment>
+            }
+          />
+        </div>
       </FormStyled>
     </div>
   );

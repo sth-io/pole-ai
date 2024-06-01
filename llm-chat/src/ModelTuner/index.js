@@ -12,12 +12,20 @@ import { OPTIONS } from "../Chat/const";
 import { ButtonIcon, ButtonSth } from "../LayoutComponents/Button";
 
 const countDecimals = (val) => {
-  if(Math.floor(val) === val) return 0;
-  return val.toString().split(".")[1].length || 0; 
-}
+  if (Math.floor(val) === val) return 0;
+  return val.toString().split(".")[1].length || 0;
+};
 
-
-const NumberControl = ({ label, value, onChange, tooltip, min, max, decimal }) => {
+const NumberControl = ({
+  label,
+  value,
+  onChange,
+  tooltip,
+  min,
+  max,
+  decimal,
+  step = 1
+}) => {
   const minmax = {};
   if (min) {
     minmax.min = min;
@@ -30,12 +38,14 @@ const NumberControl = ({ label, value, onChange, tooltip, min, max, decimal }) =
     <Box>
       <Tooltip title={tooltip}>
         <Typography id="input-slider" gutterBottom>
-          {label} {value && ' - '} {value && parseFloat(value).toFixed(countDecimals(decimal ?? 1))}
+          {label} {value && " - "}{" "}
+          {value && parseFloat(value).toFixed(countDecimals(decimal ?? 1))}
         </Typography>
       </Tooltip>
       <Slider
-        value={value ? value / (decimal ?? 1) : ''}
+        value={value ? value / (decimal ?? 1) : ""}
         onChange={(e) => onChange(e.target.value * (decimal ?? 1))}
+        step={step}
         {...minmax}
       />
     </Box>
@@ -53,20 +63,18 @@ const NumberInput = ({
   return (
     <Box>
       <Tooltip title={tooltip}>
-        <Typography gutterBottom>
-          {label}
-        </Typography>
+        <TextField
+          id="outlined-basic"
+          color="secondary"
+          label={label}
+          fullWidth
+          variant="outlined"
+          value={value ?? defaultValue}
+          onChange={(e) => onChange(e.target.value)}
+          size="small"
+          sx={{ margin: "10px 0 0 0" }}
+        />
       </Tooltip>
-      <TextField
-        id="outlined-basic"
-        color="secondary"
-        label={label}
-        variant="outlined"
-        value={value ?? defaultValue}
-        onChange={(e) => onChange(e.target.value)}
-        size="small"
-        sx={{ margin: "10px 0 0 0" }}
-      />
     </Box>
   );
 };
@@ -80,11 +88,6 @@ export const ModelTuner = ({ model, options, setOptions }) => {
   return (
     <>
       <FormControl sx={{ display: "block", padding: "0 20px 0 10px" }}>
-        <Tooltip title="reset tuning">
-          <ButtonIcon sx={{ float: "right" }} onClick={() => setOptions()}>
-            <RestartAltRoundedIcon />
-          </ButtonIcon>
-        </Tooltip>
         {Object.entries(OPTIONS).map(([name, option]) => {
           const Component = handlerMap[option.type] || handlerMap.text;
           return (
@@ -97,6 +100,11 @@ export const ModelTuner = ({ model, options, setOptions }) => {
             />
           );
         })}
+        <Tooltip title="reset tuning">
+          <ButtonSth fullWidth  sx={{margin: '15px 0 0 0'}} onClick={() => setOptions()}>
+            reset
+          </ButtonSth>
+        </Tooltip>
       </FormControl>
     </>
   );

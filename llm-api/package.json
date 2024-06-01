@@ -1,6 +1,6 @@
 {
   "name": "llm-api",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -41,6 +41,7 @@
     "querystring": "^0.2.1",
     "request": "^2.88.2",
     "rollup": "^4.15.0",
+    "socket.io": "^4.7.5",
     "typescript": "^5.4.2"
   }
 }
