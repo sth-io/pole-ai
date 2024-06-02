@@ -44,7 +44,7 @@ export const Prompt = () => {
         sx={{ marginLeft: 0 }}
         onSubmit={(e) => {
           e.preventDefault();
-          // send(prompt);
+          send(prompt);
           setPrompt("");
         }}
       >

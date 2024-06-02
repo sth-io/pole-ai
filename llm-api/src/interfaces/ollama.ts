@@ -3,10 +3,11 @@ import { NodeHtmlMarkdown } from "node-html-markdown";
 import { load } from "cheerio";
 import { Readable } from "stream";
 import { config } from "../config";
-import { AddMessage } from "./filestore";
+import { AddMessage, ListMessages } from "./filestore";
 import { jsonrepair } from "jsonrepair";
 import { ChromaModel } from "./chroma";
 import eventBus from "./eventBus";
+import { prompts } from "./prompts";
 
 export const getModels = async (res) => {
   const url = `${config.ollama.server}/${config.ollama.api.tags}`;
@@ -15,7 +16,7 @@ export const getModels = async (res) => {
   res.send(externalResponse.data);
 };
 
-export const askOllama = async (prompt, model) => {
+export const askOllama = async (prompt, model, tries = 3) => {
   const requestData = {
     prompt,
     model,
@@ -31,19 +32,28 @@ export const askOllama = async (prompt, model) => {
 
     return externalResponse.data.response;
   } catch (e) {
-    console.log("llm opinion error", e.message);
-    console.log("retrying", requestData);
-    function sleep(ms) {
-      return new Promise((resolve) => {
-        setTimeout(resolve, ms);
+    if (tries > 0) {
+      console.log("llm opinion error", e.message);
+      console.log("retrying", requestData);
+      function sleep(ms) {
+        return new Promise((resolve) => {
+          setTimeout(resolve, ms);
+        });
+      }
+      await sleep(500);
+      return askOllama(prompt, model, tries - 1);
+    } else {
+      eventBus.emit("error", {
+        message: {
+          msg: `Failed to get valid response from ${model}`,
+          status: "error",
+        },
       });
     }
-    await sleep(500);
-    return askOllama(prompt, model);
   }
 };
 
-export const getMeta = async (requestData, feedback) => {
+export const getMeta = async (requestData, feedback, tries = 3) => {
   try {
     const request = {
       stream: false,
@@ -58,8 +68,17 @@ export const getMeta = async (requestData, feedback) => {
     const repaired = jsonrepair(response.data.response);
     return { res: JSON.parse(repaired), feedback };
   } catch (e) {
-    console.log("retrying", feedback?.i);
-    return await getMeta(requestData, feedback);
+    if (tries > 0) {
+      console.log("retrying", feedback?.i);
+      return await getMeta(requestData, feedback, tries - 1);
+    } else {
+      eventBus.emit("error", {
+        message: {
+          msg: `Failed to get valid meta data from ${requestData.model}`,
+          status: "error",
+        },
+      });
+    }
   }
 };
 
@@ -93,16 +112,23 @@ export const pullWebsite = async (trigger, messages, options = {}) => {
     // return NodeHtmlMarkdown.translate(content);
   };
 
-  const response = await axios.get(urls[0].substring(1), {
-    responseType: "text",
-  });
-  const htmlContent = response.data;
-  const body = extractBodyContent(htmlContent);
+  try {
+    const response = await axios.get(urls[0].substring(1), {
+      responseType: "text",
+    });
+    const htmlContent = response.data;
+    const body = extractBodyContent(htmlContent);
 
-  return `
-    Use this website content for your response, make it clear what is coming from the website content and what's not:
-    ${body}
-  `;
+    return prompts.extend_with_website(body);
+  } catch (e) {
+    eventBus.emit("error", {
+      chatId: current.chatId,
+      message: {
+        msg: `Failed to get url content from ${urls[0].substring(1)}`,
+        status: "error",
+      },
+    });
+  }
 };
 
 const cleanAndExtendMsgs = (msg, i, length, extend) => {
@@ -126,7 +152,7 @@ export const getData = async (collection, model, ragModel, question, limit) => {
   }
   const Model = ChromaModel(collection, ragModel);
   const distilledQuestion = await askOllama(
-    `create keywords for the following text, provide keywords only in form of a comma delimited list. The text is: "${question}"`,
+    prompts.generate_keywords(question),
     model
   );
   const collections = await Model.query(distilledQuestion, limit);
@@ -139,8 +165,7 @@ export const getData = async (collection, model, ragModel, question, limit) => {
     .replace(/\\+n/g, "")
     .replace(/"/g, "'");
 
-  const systemPrompt = `Use these documents content for your response. End your response with a list of used document names. If documents dont contain the answer say that you dont know. document structure is pageContent document contents, name document name. The list of documents is ${documents}`;
-  return systemPrompt;
+  return prompts.extend_with_documents(documents);
 };
 
 export const streamingChat = async (requestData) => {
@@ -150,6 +175,13 @@ export const streamingChat = async (requestData) => {
     // add user message to storage
     if (!requestData.withoutAppend) {
       await AddMessage(msg, requestData.model);
+      if (requestData.messages.length === 1) {
+        setTimeout(() => {
+          const messages = ListMessages();
+          console.log(messages);
+          eventBus.emit("chat:new", { message: messages[0] });
+        }, 1000);
+      }
     }
 
     // get RAG data
@@ -263,11 +295,31 @@ export const streamingChat = async (requestData) => {
         );
       });
     };
+    let tries = 3;
     try {
       await call();
     } catch {
-      console.log("retry");
-      await call();
+      if (tries > 0) {
+        eventBus.emit("error", {
+          chatId: msg.chatId,
+          msg: {
+            msg: `failed response from the ${requestData.model}. Attempt: ${
+              4 - tries
+            }/${3}`,
+            status: "warning",
+          },
+        });
+        tries = tries - 1;
+        await call();
+      } else {
+        eventBus.emit("error", {
+          chatId: msg.chatId,
+          msg: {
+            msg: `couldn't get valid response from the ${requestData.model}.`,
+            status: "error",
+          },
+        });
+      }
     }
 
     // Pipe the external endpoint stream to the response to the client

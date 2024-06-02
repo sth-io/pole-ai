@@ -1,3 +1,13 @@
+# 0.4.1 [03-06-2024]
+
+- Added snackbars
+- Multiple socket based interactions added (still many to go)
+- Fix: send button wasn't sending
+
+# 0.4.0 [02-06-2024]
+- Introduction of sockets.io
+- Event buses
+
 # 0.3.3 [01-06-2024]
 
 - Major visual revamp

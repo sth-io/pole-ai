@@ -82,7 +82,7 @@ const Sidebar = () => {
         v{packagejson.version}
       </p>
       <StyledAccordion
-        elevation="0"
+        elevation={0}
         onChange={() => panelSetter("model")}
         sx={{ p: "10px" }}
       >
@@ -96,7 +96,7 @@ const Sidebar = () => {
           setOptions={setOptions}
         />
       </StyledAccordion>
-      <StyledAccordion elevation="0" onChange={() => panelSetter("tuner")}>
+      <StyledAccordion elevation={0} onChange={() => panelSetter("tuner")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -114,7 +114,7 @@ const Sidebar = () => {
           />
         </AccordionDetails>
       </StyledAccordion>
-      <StyledAccordion elevation="0" onChange={() => panelSetter("tuner")}>
+      <StyledAccordion elevation={0} onChange={() => panelSetter("tuner")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -127,7 +127,7 @@ const Sidebar = () => {
           <Personas />
         </AccordionDetails>
       </StyledAccordion>
-      <StyledAccordion elevation="0" onChange={() => panelSetter("files")}>
+      <StyledAccordion elevation={0} onChange={() => panelSetter("files")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"
@@ -141,7 +141,7 @@ const Sidebar = () => {
           <FileList trigger={panels.files} />
         </AccordionDetails>
       </StyledAccordion>
-      <StyledAccordion elevation="0" onChange={() => panelSetter("history")}>
+      <StyledAccordion elevation={0} onChange={() => panelSetter("history")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="panel1-content"

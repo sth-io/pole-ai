@@ -44,7 +44,7 @@ export const InitStore = () => {
   });
 
   FILES().forEach((file) => {
-    const fullPath = path.resolve(__dirname, file.path) 
+    const fullPath = path.resolve(__dirname, file.path);
     if (!fs.existsSync(fullPath)) {
       createFile(fullPath, file.initValue);
     }
@@ -58,40 +58,44 @@ export const InitStore = () => {
  * @param model
  */
 export function appendFile(filePath: string, data, model) {
-  if (fs.existsSync(filePath)) {
-    // existing chat conversation
-    fs.readFile(filePath, "utf8", (err, dataFromFile) => {
-      if (err) {
-        console.log(err);
-      } else {
-        const mergedData = [...JSON.parse(dataFromFile), data];
-        fs.writeFile(filePath, JSON.stringify(mergedData), "utf8", (err) => {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log("msg saved");
-          }
-        });
-      }
-    });
-  } else {
-    // new chat convesation
-    fs.writeFile(filePath, JSON.stringify([data]), async (err) => {
-      if (err) {
-        console.error(err);
-      } else {
-        if (model) {
-          await addDescription(data, data.chatId, model);
+  return new Promise((res, rej) => {
+    if (fs.existsSync(filePath)) {
+      // existing chat conversation
+      fs.readFile(filePath, "utf8", (err, dataFromFile) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const mergedData = [...JSON.parse(dataFromFile), data];
+          fs.writeFile(filePath, JSON.stringify(mergedData), "utf8", (err) => {
+            if (err) {
+              console.log(err);
+            } else {
+              console.log("msg saved");
+            }
+            res("ok");
+          });
         }
-      }
-    });
-  }
+      });
+    } else {
+      // new chat convesation
+      fs.writeFile(filePath, JSON.stringify([data]), async (err) => {
+        if (err) {
+          console.error(err);
+        } else {
+          if (model) {
+            await addDescription(data, data.chatId, model);
+            res("ok");
+          }
+        }
+      });
+    }
+  });
 }
 
 export const AddMessage = async (message, model) => {
   const filePath = `${STORAGES().messages}/${message.chatId}.json`;
   const fullPath = path.resolve(__dirname, filePath);
-  appendFile(fullPath, message, model);
+  await appendFile(fullPath, message, model);
 };
 
 export const ListMessages = () => {
@@ -115,7 +119,7 @@ export const toggleFav = async (chatId: string) => {
   try {
     const filePath = `${STORAGES().system}/history.json`;
     console.log(filePath);
-    editElement(filePath, "chatId", chatId, "favourite", null, true);
+    await editElement(filePath, "chatId", chatId, "favourite", null, true);
   } catch (e) {
     console.log("error", e.message);
   }
@@ -213,41 +217,46 @@ export const editElement = (
   changeValue: unknown,
   toggle?: boolean
 ) => {
-  try {
-    const fullPath = path.resolve(__dirname, filePath);
-    const data = fs.readFileSync(fullPath, "utf-8");
-    if (!data) {
-      throw new Error(`[edit element] there's no data!`);
-    }
-
-    const parsedData = JSON.parse(data);
-    const index = parsedData.findIndex((elem) => elem[matchKey] === matchValue);
-
-    if (index < 0) {
-      throw new Error(
-        `[edit element] element matching [${matchKey}=${matchValue}] does not exist`
-      );
-    }
-
-    // if key is not provided we'll replace whole object
-    parsedData[index] =
-      changeKey === null
-        ? changeValue
-        : {
-            ...parsedData[index],
-            [changeKey]: toggle ? !parsedData[index][changeKey] : changeValue,
-          };
-
-    fs.writeFile(fullPath, JSON.stringify(parsedData), "utf8", (err) => {
-      if (err) {
-        throw new Error(`[edit element] failed. Trace: ${err.message}`);
-      } else {
-        console.log("[edit element] success");
+  return new Promise((res, rej) => {
+    try {
+      const fullPath = path.resolve(__dirname, filePath);
+      const data = fs.readFileSync(fullPath, "utf-8");
+      if (!data) {
+        throw new Error(`[edit element] there's no data!`);
       }
-    });
-  } catch (e) {
-    console.log("error", e.message);
-  }
+
+      const parsedData = JSON.parse(data);
+      const index = parsedData.findIndex(
+        (elem) => elem[matchKey] === matchValue
+      );
+
+      if (index < 0) {
+        throw new Error(
+          `[edit element] element matching [${matchKey}=${matchValue}] does not exist`
+        );
+      }
+
+      // if key is not provided we'll replace whole object
+      parsedData[index] =
+        changeKey === null
+          ? changeValue
+          : {
+              ...parsedData[index],
+              [changeKey]: toggle ? !parsedData[index][changeKey] : changeValue,
+            };
+
+      fs.writeFile(fullPath, JSON.stringify(parsedData), "utf8", (err) => {
+        if (err) {
+          throw new Error(`[edit element] failed. Trace: ${err.message}`);
+        } else {
+          console.log("[edit element] success");
+        }
+        res("ok");
+      });
+    } catch (e) {
+      console.log("error", e.message);
+    }
+  });
 };
 
 /**

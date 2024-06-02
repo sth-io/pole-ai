@@ -197,7 +197,10 @@ app.get("/api/messages/list", async (req, res) => {
 app.post("/api/messages/fav", async (req, res) => {
   const chatId = req.body.chatId;
   try {
-    toggleFav(chatId);
+    await toggleFav(chatId);
+    const history = await ListMessages();
+    console.log({ history })
+    eventBus.emit("update_history", { message: history });
     res.send("OK");
   } catch (e) {
     console.log("e", e.message);
@@ -262,7 +265,24 @@ eventBus.on("chat:answer", (message) => {
   io.to(message.chatId).emit("chat:answer", message.message);
 });
 
+eventBus.on("chat:new", (message) => {
+  io.emit("chat:new", message.message);
+});
+
+eventBus.on("update_history", (message) => {
+  io.emit("update_history", message.message);
+})
+
+eventBus.on("error", (message) => {
+  if (message.chat) {
+    io.to(message.chatId).emit("snack", message.message);
+  } else {
+    io.emit("snack", message.message);
+  }
+});
+
 io.on("connection", (ws) => {
+  ws.emit("snack", { msg: "connected" });
   ws.on("chat:q", (message) => {
     console.log("[chat:q]: message", message);
     streamingChat(message);

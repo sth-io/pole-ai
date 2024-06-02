@@ -2,10 +2,30 @@ import { useEffect } from "react";
 import { useChatStore, useCurrentAnswer } from "../Chat/chatContext";
 import { responseToChat } from "../Chat/model";
 import { socket } from "./socket";
+import { useStatusSnackbar } from "../Snackbar/store";
 
 export const Sockets = () => {
   useEffect(() => {
     socket.emit("join", useChatStore.getState().chatId);
+
+    socket.on("snack", (message) => {
+      useStatusSnackbar.getState().addElem(message);
+    });
+
+    socket.on("chat:new", (message) => {
+      const history = [...useChatStore.getState().history];
+      history.push(message);
+      useChatStore.setState(() => ({
+        history,
+      }));
+    });
+
+    socket.on("update_history", (history) => {
+      useChatStore.setState(() => ({
+        history,
+      }));
+    })
+
     socket.on("chat:answer", (message) => {
       if (message?.done) {
         useCurrentAnswer.setState({ currentAnswer: "" });

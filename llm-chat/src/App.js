@@ -14,6 +14,7 @@ import { useChatStore } from "./Chat/chatContext";
 import { Modal, Paper } from "@mui/material";
 import { FlowBuilder } from "./RagFlow";
 import { Sockets } from "./Sockets";
+import { StatusSnackbar } from "./Snackbar";
 
 const drawerWidth = 400;
 
@@ -56,6 +57,7 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <StatusSnackbar />
       <Sockets />
       <Box sx={{ display: "flex" }}>
         <Box
@@ -94,7 +96,7 @@ function App() {
             sx={{
               display: { xs: "none", sm: "none", md: "block" },
               "& .MuiDrawer-paper": {
-                background: 'transparent',
+                background: "transparent",
                 bosmizing: "border-box",
                 width: drawerWidth,
                 border: "none",
@@ -125,7 +127,7 @@ function App() {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-       <FlowBuilder /> 
+        <FlowBuilder />
       </Modal>
     </ThemeProvider>
   );

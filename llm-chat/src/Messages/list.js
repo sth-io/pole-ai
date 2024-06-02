@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -97,20 +97,22 @@ export const MessageList = ({ trigger }) => {
   );
   const sorted = history.sort(sortDescWithFav);
 
-  const getHistory = async () => {
+  const getHistory = useCallback(async () => {
     const data = await API.getCollections();
     setHistory(data);
-  };
+  }, [setHistory]);
 
   useEffect(() => {
-    getHistory();
-  }, [trigger]);
+    if (history.length === 0) {
+      getHistory();
+    }
+  }, [trigger, history, getHistory]);
 
   return (
     <div style={{ padding: "0 0 40px 0" }}>
       <Divider
         textAlign="left"
-        sx={{ p: "10px 0 10px 0", background: colors.base, color: '#fff' }}
+        sx={{ p: "10px 0 10px 0", background: colors.base, color: "#fff" }}
       >
         ♥ favourites
       </Divider>
