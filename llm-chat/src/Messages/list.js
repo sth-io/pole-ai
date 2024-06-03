@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useEffect } from "react";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -87,26 +87,14 @@ const ListHistory = ({ history, setChatId, chatId, getHistory }) => {
 };
 
 export const MessageList = ({ trigger }) => {
-  const { setChatId, chatId, setHistory, history } = useChatStore(
-    ({ setChatId, chatId, setHistory, history }) => ({
+  const { setChatId, chatId, history } = useChatStore(
+    ({ setChatId, chatId, history }) => ({
       setChatId,
       chatId,
-      setHistory,
       history,
     })
   );
   const sorted = history.sort(sortDescWithFav);
-
-  const getHistory = useCallback(async () => {
-    const data = await API.getCollections();
-    setHistory(data);
-  }, [setHistory]);
-
-  useEffect(() => {
-    if (history.length === 0) {
-      getHistory();
-    }
-  }, [trigger, history, getHistory]);
 
   return (
     <div style={{ padding: "0 0 40px 0" }}>
@@ -120,7 +108,6 @@ export const MessageList = ({ trigger }) => {
         history={sorted.filter((elem) => elem.favourite)}
         setChatId={setChatId}
         chatId={chatId}
-        getHistory={getHistory}
       />
       <Divider
         textAlign="left"
@@ -132,7 +119,6 @@ export const MessageList = ({ trigger }) => {
         history={sorted.filter((elem) => !elem.favourite)}
         setChatId={setChatId}
         chatId={chatId}
-        getHistory={getHistory}
       />
     </div>
   );

@@ -26,4 +26,9 @@ export const API = {
     const response = await makeQuery(url, "POST", data);
     return response;
   },
+  getMessages: async () => {
+    const url = `${config.apiUrl}/api/messages/list`;
+    const response = await makeQuery(url, "GET");
+    return response.json();
+  }
 };

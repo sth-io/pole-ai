@@ -202,6 +202,12 @@ export const useChatStore = create((set, get) => {
             : store.model,
       }));
     },
+    getMessages: async () => {
+      const data = await API.getMessages();
+      set(() => ({
+        history: data
+      }));
+    },
     newChat: () => {
       const newId = uuidv4();
       emit("leave", get().chatId);
@@ -228,3 +234,12 @@ export const updateUrl = (paramKey, paramValue) => {
     .join("&");
   window.history.pushState(null, null, `?${searchParams}`);
 };
+
+// get initial state
+const init = () => {
+  const store = useChatStore.getState()
+  store.getModels();
+  store.getMessages();
+};
+
+init();

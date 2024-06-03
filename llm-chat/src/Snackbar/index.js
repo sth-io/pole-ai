@@ -29,14 +29,14 @@ export const StatusSnackbar = () => {
     <>
       <Stack
         spacing={2}
-        sx={{ maxWidth: 300, position: "fixed", right: 10, top: 10 }}
+        sx={{ maxWidth: 300, position: "fixed", zIndex: 1000, right: 10, top: 10 }}
       >
         {status.map((elem) => (
           <Alert
             key={elem.id}
             severity={statusToSeverity(elem.status)}
-            variant="filled"
-            sx={{}}
+            variant="outlined"
+            sx={{ background: '#FFF '}}
             onClose={() => {
               removeElem(elem.id);
             }}

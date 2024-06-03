@@ -22,13 +22,6 @@ export const ModelPicker = ({
   }));
   const model = propModel || ctxModel;
   const setModel = propSetModel || ctxSetModel;
-
-  useEffect(() => {
-    if (trigger) {
-      getModels();
-    }
-  }, [trigger, getModels]);
-
   const noModel = { value: "", label: "No model" };
 
   return (
