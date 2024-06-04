@@ -135,7 +135,13 @@ const CurrentAnswer = ({ contentRef }) => {
 
   if (!currentAnswer && questionSend) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", paddingTop: '20px' }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          paddingTop: "20px",
+        }}
+      >
         <Loader />
       </div>
     );
@@ -185,6 +191,9 @@ export const Chat = React.memo(() => {
     execute();
   }, [chatId]);
 
+  const messages = removePreviousGenerations(chat).filter(
+    (item) => item.role !== "system"
+  );
   return (
     <Box
       ref={contentRef}
@@ -192,17 +201,16 @@ export const Chat = React.memo(() => {
     >
       <ContainerStyled>
         {chat.length === 0 && <SystemHello />}
-        {removePreviousGenerations(chat)
-          .filter((item) => item.role !== "system")
-          .map((msg, i) => (
-            <Message
-              key={msg.stamp}
-              message={msg}
-              diverge={diverge}
-              regenerate={regenerate}
-              toggle={() => toggleChatMessage(i)}
-            />
-          ))}
+        {messages.map((msg, i) => (
+          <Message
+            key={msg.stamp}
+            message={msg}
+            diverge={diverge}
+            regenerate={regenerate}
+            toggle={() => toggleChatMessage(i)}
+            isLast={i === messages.length - 1}
+          />
+        ))}
         <CurrentAnswer contentRef={contentRef} />
       </ContainerStyled>
     </Box>

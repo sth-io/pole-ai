@@ -3,11 +3,12 @@ import { NodeHtmlMarkdown } from "node-html-markdown";
 import { load } from "cheerio";
 import { Readable } from "stream";
 import { config } from "../config";
-import { AddMessage, ListMessages } from "./filestore";
+import { AddMessage, ListMessages, STORAGES } from "./filestore";
 import { jsonrepair } from "jsonrepair";
 import { ChromaModel } from "./chroma";
 import eventBus from "./eventBus";
 import { prompts } from "./prompts";
+import path from "path";
 
 export const getModels = async (res) => {
   const url = `${config.ollama.server}/${config.ollama.api.tags}`;
@@ -58,8 +59,7 @@ export const getMeta = async (requestData, feedback, tries = 3) => {
     const request = {
       stream: false,
       model: requestData.model,
-      system: `You're indexing machine. When user sends message you'll answer only in valid JSON, precisely and on point by following this template:
-        { description: [biref description of a file], language: [language of the file], functions: [JSON array of functions in the code files]}`,
+      system: prompts.index_code(),
       prompt: requestData.prompt,
     };
     console.log(requestData);
@@ -156,10 +156,15 @@ export const getData = async (collection, model, ragModel, question, limit) => {
     model
   );
   const collections = await Model.query(distilledQuestion, limit);
+  console.log("c", collections.metadatas);
+  const indexRoot = path.resolve(__dirname, STORAGES().indexing);
   const documents = collections.documents
     .map(
       (document, i) =>
-        `pageContent: ${document}. fileName:${collections.ids[i]}`
+        `[start] filePath:${collections.metadatas[0][i].name.replace(
+          indexRoot,
+          ""
+        )}, pageContent: ${document}. [end] `
     )
     .join(",")
     .replace(/\\+n/g, "")
@@ -172,17 +177,8 @@ export const streamingChat = async (requestData) => {
   try {
     // last msg
     const msg = requestData.messages[requestData.messages.length - 1];
-    // add user message to storage
-    if (!requestData.withoutAppend) {
-      await AddMessage(msg, requestData.model);
-      if (requestData.messages.length === 1) {
-        setTimeout(() => {
-          const messages = ListMessages();
-          console.log(messages);
-          eventBus.emit("chat:new", { message: messages[0] });
-        }, 1000);
-      }
-    }
+    const chatId = msg.chatId;
+    const userQ = msg;
 
     // get RAG data
     const documents = await getData(
@@ -223,10 +219,19 @@ export const streamingChat = async (requestData) => {
 
     // pass the prepared data to Ollama
     const url = `${config.ollama.server}/${config.ollama.api.chat}`;
+
     const call = async () => {
+      eventBus.emit("chat:streaming", {
+        chatId,
+        message: { isStreaming: true },
+      });
+      console.log("calling");
+      const controller = new AbortController();
       const response = await axios.post(url, request, {
         responseType: "stream", // Set response type to stream
+        signal: controller.signal,
       });
+      eventBus.emit("controller", { chatId, controller });
       // response.data.pipe(res);
 
       // Variable to accumulate all chunks into a single string
@@ -272,6 +277,10 @@ export const streamingChat = async (requestData) => {
               ...result,
             },
           });
+          eventBus.emit("chat:streaming", {
+            chatId,
+            message: { isStreaming: false },
+          });
         } else {
           eventBus.emit("chat:answer", {
             chatId: msg.chatId,
@@ -282,6 +291,20 @@ export const streamingChat = async (requestData) => {
 
       // Listen for 'end' event to finalize data collection and call AddMessage function
       response.data.on("end", async () => {
+        // add user message to storage
+        if (!requestData.withoutAppend) {
+          await AddMessage(userQ, requestData.model);
+          if (requestData.messages.length === 1) {
+            setTimeout(() => {
+              const messages = ListMessages();
+              console.log(messages);
+              if (messages) {
+                eventBus.emit("chat:new", { message: messages[0] });
+              }
+            }, 1000);
+          }
+        }
+
         // Call AddMessage function with the collected data
         await AddMessage(
           {
@@ -295,32 +318,42 @@ export const streamingChat = async (requestData) => {
         );
       });
     };
-    let tries = 3;
-    try {
-      await call();
-    } catch {
-      if (tries > 0) {
-        eventBus.emit("error", {
-          chatId: msg.chatId,
-          msg: {
-            msg: `failed response from the ${requestData.model}. Attempt: ${
-              4 - tries
-            }/${3}`,
-            status: "warning",
-          },
-        });
-        tries = tries - 1;
-        await call();
-      } else {
-        eventBus.emit("error", {
-          chatId: msg.chatId,
-          msg: {
-            msg: `couldn't get valid response from the ${requestData.model}.`,
-            status: "error",
-          },
-        });
-      }
+    function sleep(ms) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
     }
+
+    const executor = async (tries = 3) => {
+      try {
+        await call();
+      } catch {
+        if (tries > 0) {
+          eventBus.emit("error", {
+            chatId: chatId,
+            msg: {
+              msg: `failed response from the ${requestData.model}. Attempt: ${
+                4 - tries
+              }/${3}`,
+              status: "warning",
+            },
+          });
+          await sleep(2000);
+          console.log("retry");
+          executor(tries - 1);
+        } else {
+          eventBus.emit("error", {
+            chatId: chatId,
+            msg: {
+              msg: `couldn't get valid response from the ${requestData.model}.`,
+              status: "error",
+            },
+          });
+        }
+      }
+    };
+
+    executor();
 
     // Pipe the external endpoint stream to the response to the client
   } catch (e) {

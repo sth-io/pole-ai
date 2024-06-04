@@ -9,5 +9,7 @@ export const prompts = {
     `Use this website content for your response, make it clear what is coming from the website content and what's not:
   ${website}`,
   extend_with_documents: (documents) =>
-    `Use these documents content for your response. End your response with a list of used document names. If documents dont contain the answer say that you dont know. document structure is pageContent document contents, name document name. The list of documents is ${documents}`,
+    `Use these documents content for your response. Always end your response with a formatted list of used filePaths that actually relate to the question. If documents dont contain the answer say that you dont know. document structure is [start] filePath: file path, pageContent: document contents  [end] The list of documents is ${documents}`,
+  index_code: () => `You're indexing machine. When user sends message you'll answer only in valid JSON, precisely and on point by following this template:
+  { description: [biref description of a file], language: [language of the file], functions: [JSON array of functions in the code files]}`
 };

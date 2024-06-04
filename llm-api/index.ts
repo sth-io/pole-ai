@@ -199,7 +199,7 @@ app.post("/api/messages/fav", async (req, res) => {
   try {
     await toggleFav(chatId);
     const history = await ListMessages();
-    console.log({ history })
+    console.log({ history });
     eventBus.emit("update_history", { message: history });
     res.send("OK");
   } catch (e) {
@@ -211,8 +211,9 @@ app.post("/api/messages/fav", async (req, res) => {
 app.delete("/api/messages/:id", async (req, res) => {
   try {
     Messages().delete(req.params.id);
-    res.status(200);
-    res.send("OK");
+    const history = await ListMessages();
+    console.log({ history });
+    eventBus.emit("update_history", { message: history });
   } catch (e) {
     console.log("e", e.message);
     res.send({ error: e.message });
@@ -261,23 +262,35 @@ const io = new Server(httpServer, {
   },
 });
 
+let controllers = {};
+eventBus.on("controller", (message) => {
+  controllers[message.chatId] = message.controller;
+});
+
 eventBus.on("chat:answer", (message) => {
   io.to(message.chatId).emit("chat:answer", message.message);
 });
 
+eventBus.on("chat:streaming", (message) => {
+  io.to(message.chatId).emit("chat:streaming", message.message);
+});
+
 eventBus.on("chat:new", (message) => {
+  console.log("emit new chat", message);
   io.emit("chat:new", message.message);
 });
 
 eventBus.on("update_history", (message) => {
+  console.log("emit history", message);
   io.emit("update_history", message.message);
-})
+});
 
 eventBus.on("error", (message) => {
+  console.log("emit error", message);
   if (message.chat) {
-    io.to(message.chatId).emit("snack", message.message);
+    io.to(message.chatId).emit("snack", message.msg);
   } else {
-    io.emit("snack", message.message);
+    io.emit("snack", message.msg);
   }
 });
 
@@ -286,6 +299,17 @@ io.on("connection", (ws) => {
   ws.on("chat:q", (message) => {
     console.log("[chat:q]: message", message);
     streamingChat(message);
+  });
+
+  ws.on("chat:cancel", (chatId) => {
+    const controller = controllers[chatId];
+    if (controller) {
+      io.to(chatId).emit("chat:streaming", { isStreaming: false });
+      controller.abort();
+      delete controller[chatId];
+    } else {
+      console.log("no chat to abort");
+    }
   });
 
   ws.on("join", (chatId) => {

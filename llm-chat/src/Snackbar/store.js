@@ -19,6 +19,6 @@ export const useStatusSnackbar = create((set, get) => ({
     set(() => ({ status: newS }));
     window.setTimeout(() => {
       get().removeElem(hash);
-    }, msg.duration ?? 5000);
+    }, msg?.duration ?? 5000);
   },
 }));

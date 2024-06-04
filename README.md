@@ -145,7 +145,7 @@ services:
       retries: 3
 
   pole-api:
-    image: kweg/pole-api:0.3.3
+    image: kweg/pole-api:0.4.3
     restart: unless-stopped
     volumes:
       - /data/db:/usr/src/app/db
@@ -160,7 +160,7 @@ services:
 
   pole-chat:
     restart: unless-stopped
-    image: kweg/pole-chat:0.3.3
+    image: kweg/pole-chat:0.4.3
     environment:
       NODE_ENV: production
       REACT_APP_API: http://localhost:6550

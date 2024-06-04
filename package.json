@@ -1,6 +1,6 @@
 {
   "name": "pole-ai",
-  "version": "0.3.3",
+  "version": "0.4.3",
   "description": "",
   "main": "main.js",
   "workspaces": [

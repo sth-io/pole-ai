@@ -116,7 +116,7 @@ function App() {
           }}
         >
           <TopBar setMenuOpen={handleDrawerToggle} />
-          <MainContainer style={{ height: `${windowHeight - 80}px` }}>
+          <MainContainer style={{ height: `${windowHeight - 70}px` }}>
             <Chat />
             <Prompt />
           </MainContainer>

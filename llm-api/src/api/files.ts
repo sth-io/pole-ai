@@ -7,6 +7,7 @@ import {
   AddMessage,
   STORAGES,
   cleanDir,
+  copyFiles,
   getAllFilesInDir,
 } from "../interfaces/filestore";
 
@@ -64,7 +65,7 @@ export const vectorizeDirectory = async (
   let idx = 1;
   for (const fileCall of fileCalls) {
     await fileCall();
-    console.log(`[vectorize] file ${idx} of ${files.length} done`)
+    console.log(`[vectorize] file ${idx} of ${files.length} done`);
   }
   console.info("[vectorize] all files processed");
   return "done";
@@ -112,6 +113,7 @@ export const vectorizeFile = async (
           content: doc.pageContent,
           id: `${pathUrl}:${idx}-${i}`,
           uris: pathUrl,
+          metadata: { name: pathUrl },
         };
       })
     );
@@ -172,29 +174,32 @@ const downloadFile = async (
  * @param {Response} res - HTTP response object used to send a status update after processing.
  * @returns {Promise} A promise that resolves upon successful handling of the given path.
  */
-export const handleIndexPath = async (path, meta, model, res) => {
-  if (path.indexOf("http:") === 0 || path.indexOf("https:") === 0) {
-    const url = new URL(path);
+export const handleIndexPath = async (userPath, meta, model, res) => {
+  if (userPath.indexOf("http:") === 0 || userPath.indexOf("https:") === 0) {
+    const url = new URL(userPath);
     const fileName = url.pathname.split("/").pop();
     const hasExt = fileName.indexOf(".") > 0;
 
     console.info(`[index] download ${fileName || meta} from ${path}`);
     await downloadFile(
-      path,
+      userPath,
       `${fileName || meta}${hasExt ? "" : ".txt"}`,
       async () => {
-        const tmp = path(__dirname, `${STORAGES().tmp}/`);
+        const tmp = path.resolve(__dirname, `${STORAGES().tmp}/`);
         await vectorizeDirectory(tmp, meta, model);
         cleanDir(tmp);
       }
     );
   } else {
-    if (fs.lstatSync(path).isDirectory()) {
+    const target = `${STORAGES().indexing}/${meta}`;
+    const fullTarget = path.resolve(__dirname, target);
+    await copyFiles(userPath, fullTarget);
+    if (fs.lstatSync(userPath).isDirectory()) {
       console.info(`[index] initialising directory`);
-      await vectorizeDirectory(path, meta, model);
+      await vectorizeDirectory(fullTarget, meta, model);
     } else {
       console.info("[index] initialising file");
-      await vectorizeFile(path, meta, model);
+      await vectorizeFile(fullTarget, meta, model);
     }
   }
   res.send("done");

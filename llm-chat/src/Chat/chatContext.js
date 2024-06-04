@@ -32,6 +32,7 @@ export const useCurrentAnswer = create((set) => ({
 export const usePrompt = create((set) => ({
   prompt: "",
   file: {},
+  isStreaming: false,
   setFile: (value) => {
     set(() => ({ file: value }));
   },

@@ -24,11 +24,10 @@ const sortDescWithFav = (a, b) => {
   return timestampB - timestampA;
 };
 
-const ListHistory = ({ history, setChatId, chatId, getHistory }) => {
+const ListHistory = ({ history, setChatId, chatId }) => {
   const commonStyle = { cursor: "pointer" };
   const deleteElement = async (chatId) => {
     await API.delete(chatId);
-    getHistory();
   };
   return (
     <List

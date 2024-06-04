@@ -117,7 +117,6 @@ export const ChromaModel = (collection = "", model = "") => {
     };
     const queryUrl = `${config.chroma.server}/api/v1/collections/${collectionId}/query`;
     const resp = await axios.post(queryUrl, payload);
-    console.log({ resp });
     return resp.data;
   };
 

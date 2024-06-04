@@ -1,31 +1,45 @@
 import React from "react";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import CancelPresentationRoundedIcon from "@mui/icons-material/CancelPresentationRounded";
 import { ButtonIcon } from "../LayoutComponents/Button";
 import { FormStyled } from "./styled";
 import { send, useChatStore, usePrompt, useSocket } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
 import { InputAdornment, InputBase } from "@mui/material";
 import { colors } from "../LayoutComponents/theme";
+import { emit } from "../Sockets/eventBus";
 
 export const Prompt = () => {
-  const { prompt, setPrompt } = usePrompt(({ prompt, setPrompt }) => ({
-    prompt,
-    setPrompt,
-  }));
-  const { chat, toggleChatMessage } = useChatStore(
-    ({ chat, toggleChatMessage }) => ({
+  const { prompt, setPrompt, isStreaming } = usePrompt(
+    ({ prompt, setPrompt, isStreaming }) => ({
+      prompt,
+      setPrompt,
+      isStreaming,
+    })
+  );
+  const { chat, toggleChatMessage, chatId } = useChatStore(
+    ({ chat, toggleChatMessage, chatId }) => ({
       chat,
       toggleChatMessage,
+      chatId
     })
   );
   // const send = useSocket((state) => state.send);
 
+  const submit = (e) => {
+    e.preventDefault();
+    if (isStreaming) {
+     emit('chat:cancel', chatId) 
+    } else {
+      send(prompt);
+      setPrompt("");
+    }
+  };
+
   const onKeys = (e) => {
     // use enter/return to send the message (doesn't trigger on shift+enter)
     if ((e.key === "Enter" || e.key === "Return") && e.shiftKey == false) {
-      e.preventDefault();
-      send(prompt)
-      setPrompt("");
+      submit(e);
     }
 
     // revert last messages on arrow up
@@ -43,9 +57,7 @@ export const Prompt = () => {
       <FormStyled
         sx={{ marginLeft: 0 }}
         onSubmit={(e) => {
-          e.preventDefault();
-          send(prompt);
-          setPrompt("");
+          submit(e);
         }}
       >
         <div
@@ -88,7 +100,11 @@ export const Prompt = () => {
                     m: "0 10px 22px 0",
                   }}
                 >
-                  <PlayArrowRoundedIcon />
+                  {isStreaming ? (
+                    <CancelPresentationRoundedIcon />
+                  ) : (
+                    <PlayArrowRoundedIcon />
+                  )}
                 </ButtonIcon>
               </InputAdornment>
             }

@@ -9,8 +9,9 @@ import { useChatStore, usePrompt } from "../Chat/chatContext";
 import { Favourite } from "../Messages/Favourite";
 import Person4OutlinedIcon from "@mui/icons-material/Person4Outlined";
 import SourceOutlinedIcon from "@mui/icons-material/SourceOutlined";
-import { Chip, Stack } from "@mui/material";
+import { Chip, Stack, Tooltip } from "@mui/material";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import { trimText } from "../utils/text";
 
 const ChatStatus = () => {
   const { file, setFile } = usePrompt(({ file, setFile }) => ({
@@ -52,7 +53,8 @@ const ChatStatus = () => {
     statuses.push({
       name: "persona",
       icon: <Person4OutlinedIcon />,
-      content: hasPersona.title,
+      content: trimText(hasPersona.title, 5),
+      tooltipContent: hasPersona.title,
       action: () => setPersona(""),
     });
   }
@@ -60,7 +62,8 @@ const ChatStatus = () => {
     statuses.push({
       name: "collection",
       icon: <SourceOutlinedIcon />,
-      content: collection,
+      content: trimText(collection, 5),
+      tooltipContent: collection,
       action: () => setCollection(""),
     });
   }
@@ -68,7 +71,7 @@ const ChatStatus = () => {
     statuses.push({
       name: "options",
       icon: <TuneRoundedIcon />,
-      content: "model tuned",
+      tooltipContent: "model tuned",
       action: () => setOptions(),
     });
   }
@@ -76,23 +79,32 @@ const ChatStatus = () => {
     statuses.push({
       name: "file",
       icon: file.images ? <VideoFileRoundedIcon /> : <FilePresentRoundedIcon />,
-      content: `${file.images ? 'image' : 'text'}: ${file.name}`,
+      tooltipContent: file.name,
       action: () => setFile({}),
     });
   }
 
   return (
-    <Stack direction="row" spacing={1}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "10px",
+        justifyContent: "flex-end",
+      }}
+    >
       {statuses.map((status) => (
-        <Chip
-          key={status.name}
-          color="secondary"
-          icon={status.icon}
-          label={status.content}
-          onDelete={() => status.action()}
-        />
+        <Tooltip title={status.tooltipContent}>
+          <Chip
+            key={status.name}
+            color="secondary"
+            icon={status.icon}
+            label={status.content}
+            onDelete={() => status.action()}
+          />
+        </Tooltip>
       ))}
-    </Stack>
+    </div>
   );
 };
 

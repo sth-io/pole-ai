@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs-extra";
 import { mkdir } from "node:fs";
 import path from "path";
 import { askOllama } from "./ollama";
@@ -19,6 +19,7 @@ export const STORAGES = () => {
     messages: "../db/messages",
     tmp: "../db/tmp",
     uploads: "../db/uploads",
+    indexing: "../db/indexing",
   };
 };
 
@@ -32,9 +33,9 @@ export const FILES = () => {
 /**
  * Initialises required directories if they don't exist
  */
-export const InitStore = () => {
+export const InitStore = async () => {
   const directories = Object.values(STORAGES());
-  directories.forEach((dir) => {
+  directories.forEach((dir, i) => {
     const fullPath = path.resolve(__dirname, dir);
     if (!fs.existsSync(fullPath)) {
       mkdir(fullPath, { recursive: true }, (err) => {
@@ -334,10 +335,20 @@ export const createFile = (filePath: string, data: string) => {
   }
 
   try {
+    fs.ensureFileSync(filePath)
     fs.writeFileSync(filePath, data, "utf-8");
 
     console.log(`[create file] file created at: ${filePath}`);
   } catch (error) {
     console.error(`[create file] failed to create file: ${error.message}`);
+  }
+};
+
+export const copyFiles = async (sourceDir, destinationDir) => {
+  try {
+    await fs.copy(sourceDir, destinationDir);
+    console.log(`${sourceDir} has been copied to ${destinationDir}`);
+  } catch (err) {
+    console.error("Error:", err);
   }
 };

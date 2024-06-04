@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useChatStore, useCurrentAnswer } from "../Chat/chatContext";
+import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
 import { responseToChat } from "../Chat/model";
 import { socket } from "./socket";
 import { useStatusSnackbar } from "../Snackbar/store";
@@ -7,6 +7,10 @@ import { useStatusSnackbar } from "../Snackbar/store";
 export const Sockets = () => {
   useEffect(() => {
     socket.emit("join", useChatStore.getState().chatId);
+
+    socket.on("chat:streaming", (message) => {
+      usePrompt.setState(() => ({ isStreaming: message.isStreaming }));
+    });
 
     socket.on("snack", (message) => {
       useStatusSnackbar.getState().addElem(message);
@@ -24,7 +28,7 @@ export const Sockets = () => {
       useChatStore.setState(() => ({
         history,
       }));
-    })
+    });
 
     socket.on("chat:answer", (message) => {
       if (message?.done) {
@@ -57,6 +61,8 @@ export const Sockets = () => {
         case "message:toggle":
           socket.emit(id, content);
           break;
+        case "chat:cancel":
+          socket.emit(id, content);
         default:
           console.log("invalid message");
       }

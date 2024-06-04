@@ -28,10 +28,10 @@ const modalStyle = {
   padding: 1,
 };
 
-const nanoToS = (time) => {
+const nanoToS = (time, fixed = 1) => {
   const value = time / 1000000000;
   if (parseInt(value) !== value) {
-    return value.toFixed(1);
+    return value.toFixed(fixed);
   }
   return value;
 };
@@ -46,21 +46,33 @@ export const MessageStats = ({ message }) => (
     }}
   >
     {message.load_duration && (
-      <Chip
-        size="small"
-        label={`
-                  tokens: ${message.eval_count},
-                  load: ${nanoToS(message.load_duration)}s,
-                  eval: ${nanoToS(message.prompt_eval_duration)}s 
-                  total: ${nanoToS(message.total_duration)}s,
+      <Tooltip
+        title={`
+      tokens: ${message.eval_count},
+      load: ${nanoToS(message.load_duration, 4)}s,
+      eval: ${nanoToS(message.prompt_eval_duration, 4)}s 
+      total: ${nanoToS(message.total_duration, 4)}s
+      ≈${(message.eval_count / nanoToS(message.total_duration)).toFixed(1)}t/s
+      `}
+      >
+        <Chip
+          size="small"
+          label={`
                   ≈${(
                     message.eval_count / nanoToS(message.total_duration)
                   ).toFixed(1)}t/s`}
-        variant="outlined"
-      />
+          variant="outlined"
+        />
+      </Tooltip>
     )}
     {message.model && (
-      <Chip size="small" label={`${message.model}`} variant="outlined" />
+      <Tooltip title={message.model}>
+        <Chip
+          size="small"
+          label={`${trimText(message.model, 10)}`}
+          variant="outlined"
+        />
+      </Tooltip>
     )}
     <Alternatives alternatives={message.alternatives} />
   </div>
@@ -148,7 +160,7 @@ const ConversationText = ({ message }) => {
 };
 
 export const Message = React.memo(
-  ({ message, toggle, diverge, regenerate, children }) => {
+  ({ message, toggle, diverge, regenerate, children, isLast }) => {
     const triggerToggle = () => {
       if (toggle) {
         toggle();
@@ -218,7 +230,7 @@ export const Message = React.memo(
                 </Container>
               </Tooltip>
             )}
-            {message.role === "assistant" && (
+            {message.role === "assistant" && isLast && (
               <Tooltip title="Regenerate - ask system to generate new response">
                 <Container disableGutters>
                   <ButtonIcon

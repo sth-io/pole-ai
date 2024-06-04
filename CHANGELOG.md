@@ -1,3 +1,12 @@
+# 0.4.3 [04-06-2024]
+
+- Extended socket support
+    - ability to stop streaming
+    - error display improvements
+- Indexing copies files to db (will be used later when model returns list of used files)
+- Fix: Couple mobile ui tweaks (chips were breaking window width)
+- Fix: File intitialisator was broken, now it works from the begining
+
 # 0.4.1 [03-06-2024]
 
 - Added snackbars
