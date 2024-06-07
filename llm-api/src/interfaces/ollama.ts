@@ -9,6 +9,7 @@ import { ChromaModel } from "./chroma";
 import eventBus from "./eventBus";
 import { prompts } from "./prompts";
 import path from "path";
+import { SearchXng } from "./searchxng";
 
 export const getModels = async (res) => {
   const url = `${config.ollama.server}/${config.ollama.api.tags}`;
@@ -17,11 +18,12 @@ export const getModels = async (res) => {
   res.send(externalResponse.data);
 };
 
-export const askOllama = async (prompt, model, tries = 3) => {
+export const askOllama = async (prompt, model, tries = 3, options = {}) => {
   const requestData = {
     prompt,
     model,
     stream: false,
+    options,
   };
 
   try {
@@ -42,10 +44,10 @@ export const askOllama = async (prompt, model, tries = 3) => {
         });
       }
       await sleep(500);
-      return askOllama(prompt, model, tries - 1);
+      return askOllama(prompt, model, tries - 1, options);
     } else {
       eventBus.emit("error", {
-        message: {
+        msg: {
           msg: `Failed to get valid response from ${model}`,
           status: "error",
         },
@@ -73,7 +75,7 @@ export const getMeta = async (requestData, feedback, tries = 3) => {
       return await getMeta(requestData, feedback, tries - 1);
     } else {
       eventBus.emit("error", {
-        message: {
+        msg: {
           msg: `Failed to get valid meta data from ${requestData.model}`,
           status: "error",
         },
@@ -82,52 +84,105 @@ export const getMeta = async (requestData, feedback, tries = 3) => {
   }
 };
 
-export const pullWebsite = async (trigger, messages, options = {}) => {
-  if (!trigger) {
-    return "";
-  }
-  const lastIndex = messages.length - 1;
-  const current = messages[lastIndex];
-
-  function findUrl(text) {
-    const regex =
-      /#(https?:\/\/[^\s]+(?:\/[^?#]+)?(?:\?(?:[^#]+)(?:&(?:[^=]+=[^&]+))*)?(?:#[^\s]*)?)?/gi;
-    return text.match(regex)?.filter((url) => url !== "");
-  }
-  const urls = findUrl(current.content);
-  if (!urls) {
-    return;
-  }
-  if (urls.length === 0) {
-    return;
-  }
-
+export const getUrlData = async (url, chatId) => {
   // Parsing to markdown to preserve context
   const extractBodyContent = (content) => {
     const $ = load(content);
-    const key = $("article").text() ? "article" : "body";
-    const target = $(key).children().remove("script").end().text();
-    return target.replace(/\\+n/g, "").replace(/"/g, "'");
-
-    // return NodeHtmlMarkdown.translate(content);
+    const key = $("article").text() ? "article p" : "body p";
+    const target = $(key).text();
+    return target.replace(/\\+n/g, "").replace(/"/g, "").replace(/,/g, "");
   };
 
   try {
-    const response = await axios.get(urls[0].substring(1), {
+    const response = await axios.get(url, {
       responseType: "text",
     });
     const htmlContent = response.data;
     const body = extractBodyContent(htmlContent);
 
-    return prompts.extend_with_website(body);
+    return {
+      prompt: prompts.extend_with_website(body, url ?? ""),
+      url,
+    };
   } catch (e) {
+    console.log(e)
     eventBus.emit("error", {
-      chatId: current.chatId,
-      message: {
-        msg: `Failed to get url content from ${urls[0].substring(1)}`,
+      chatId: chatId,
+      msg: {
+        msg: `Failed to get url content from ${url}`,
         status: "error",
       },
     });
+    return {
+      prompt: "",
+      url: "",
+    };
+  }
+};
+
+export const pullWebsite = async (
+  trigger,
+  messages,
+  options = { system: false }
+) => {
+  if (!trigger) {
+    return { prompt: "", url: "" };
+  }
+  const lastIndex = messages.length - 1;
+  const current = messages[lastIndex];
+
+  function findUrl(text) {
+    const regexSystem =
+      /\b(https?:\/\/[^\s]+(?:\/[^?#]+)?(?:\?(?:[^#]+)(?:&(?:[^=]+=[^&]+))*)?(?:#[^\s]*)?)?\b/gi;
+    const regexUser =
+      /#(https?:\/\/[^\s]+(?:\/[^?#]+)?(?:\?(?:[^#]+)(?:&(?:[^=]+=[^&]+))*)?(?:#[^\s]*)?)?/gi;
+    const regex = options.system ? regexSystem : regexUser;
+    return text.match(regex)?.filter((url) => url !== "");
+  }
+  const urls = findUrl(current.content);
+  console.log("found urls", urls, current);
+  if (!urls || urls.length === 0) {
+    return { prompt: "", url: "" };
+  }
+  const substrLength = options.system ? 0 : 1
+  return getUrlData(urls[0].substring(substrLength), current.chatId);
+};
+
+export const pullSearch = async (requestData, msg) => {
+  if (requestData.ragOptions.useSearch) {
+    const shouldQueryA = await askOllama(
+      prompts.should_search(msg.content),
+      requestData.model,
+      undefined,
+      { num_predict: 12, temperature: 0 }
+    );
+    console.log("should search:", shouldQueryA);
+    const shouldQuery = `${shouldQueryA}`.toLowerCase().indexOf("true") > -1;
+    if (shouldQuery) {
+      const query = await askOllama(
+        prompts.geneare_search_query(msg.content),
+        requestData.model,
+        undefined,
+        { temperature: 0 }
+      );
+
+      const results = await SearchXng().search(query.replace(/"|'/g, ""));
+      const pick = await askOllama(
+        prompts.pick_search_result(results, msg.content),
+        requestData.model,
+        undefined,
+        { temperature: 0, num_predict: 100 }
+      );
+      console.log("pick", pick);
+      const urlData = await pullWebsite(
+        true,
+        [{ content: pick, chatId: msg.chatId }],
+        { system: true }
+      );
+      return urlData;
+    }
+  } else {
+    return { prompt: "", url: "" };
   }
 };
 
@@ -197,17 +252,21 @@ export const streamingChat = async (requestData) => {
       requestData.config
     );
 
+    const searchData = await pullSearch(requestData, msg);
+
     const messageContext = msg.context
       ? `this is the context of the question: ${msg.context}.`
       : "";
 
+    console.log({ websiteData, searchData });
     // Prepare request
     let request = {
       messages: [
         ...requestData.messages.map((elem, i) =>
           cleanAndExtendMsgs(elem, i, requestData.messages.length, [
             documents,
-            websiteData,
+            websiteData.prompt,
+            searchData.prompt,
             messageContext,
           ])
         ),
@@ -246,6 +305,7 @@ export const streamingChat = async (requestData) => {
         prompt_eval_duration?: number;
         eval_count?: number;
         eval_duration?: number;
+        used_url?: string;
       } = {};
 
       // Transform each chunk to a readable stream and accumulate them
@@ -268,6 +328,7 @@ export const streamingChat = async (requestData) => {
             prompt_eval_duration: json.prompt_eval_duration,
             eval_count: json.eval_count,
             eval_duration: json.eval_duration,
+            used_url: searchData.url || websiteData.url,
           };
           eventBus.emit("chat:answer", {
             chatId: msg.chatId,

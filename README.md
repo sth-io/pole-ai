@@ -127,6 +127,26 @@ Setup is rather strightforward, you should run `npm i` and once it's done `npm r
 
 ```
 services:
+  searxng:
+      image: docker.io/searxng/searxng:latest
+      restart: unless-stopped
+      ports:
+        - 8080:8080
+      volumes:
+        - /opt/searchxng:/etc/searxng:rw
+      environment:
+        - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+      cap_drop:
+        - ALL
+      cap_add:
+        - CHOWN
+        - SETGID
+        - SETUID
+      logging:
+        driver: "json-file"
+        options:
+          max-size: "1m"
+          max-file: "1"
   chroma:
     image: ghcr.io/chroma-core/chroma:latest
     restart: unless-stopped
@@ -145,7 +165,7 @@ services:
       retries: 3
 
   pole-api:
-    image: kweg/pole-api:0.4.3
+    image: kweg/pole-api:0.4.6
     restart: unless-stopped
     volumes:
       - /data/db:/usr/src/app/db
@@ -154,13 +174,14 @@ services:
       NODE_ENV: production
       CHROMA_SERVER: http://localhost:8101
       OLLAMA_SERVER: http://localhost:11434
+      OPENSEARCH_SERVER: http://localhost:8080
     ports:
       - 6550:3000 # REST API
       - 6552:3001 # Sockets API
 
   pole-chat:
     restart: unless-stopped
-    image: kweg/pole-chat:0.4.3
+    image: kweg/pole-chat:0.4.6
     environment:
       NODE_ENV: production
       REACT_APP_API: http://localhost:6550

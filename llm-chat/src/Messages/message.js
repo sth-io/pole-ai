@@ -36,6 +36,11 @@ const nanoToS = (time, fixed = 1) => {
   return value;
 };
 
+const handleOpenLink = (url) => (e) => {
+  e.preventDefault(); // Prevents default link behavior if necessary
+  window.open(url, "_blank");
+};
+
 export const MessageStats = ({ message }) => (
   <div
     style={{
@@ -71,6 +76,17 @@ export const MessageStats = ({ message }) => (
           size="small"
           label={`${trimText(message.model, 10)}`}
           variant="outlined"
+        />
+      </Tooltip>
+    )}
+    {message.used_url && (
+      <Tooltip title={message.used_url}>
+        <Chip
+          onClick={handleOpenLink(message.used_url)}
+          size="small"
+          label={`${trimText(message.used_url, 20)}`}
+          variant="outlined"
+          color="info"
         />
       </Tooltip>
     )}

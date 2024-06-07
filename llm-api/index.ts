@@ -15,10 +15,17 @@ import {
   editElement,
   toggleFav,
 } from "./src/interfaces/filestore";
-import { getMeta, getModels, streamingChat } from "./src/interfaces/ollama";
+import {
+  getMeta,
+  getModels,
+  getUrlData,
+  streamingChat,
+} from "./src/interfaces/ollama";
 import { Persona } from "./src/api/Personas";
 import { Messages } from "./src/api/Messages";
 import eventBus from "./src/interfaces/eventBus";
+import { SearchXng } from "./src/interfaces/searchxng";
+import { TFJS } from "./src/interfaces/tfjs";
 
 console.log("[sys] initialising directories");
 InitStore();
@@ -129,6 +136,11 @@ app.post("/api/index/upload", upload.any(), async (req, res) => {
   await cleanDir(filePath);
 });
 
+app.post("/api/webcontent", async (req, res) => {
+  const resp = await getUrlData(req.body.url, "");
+  res.send(resp);
+});
+
 app.post("/api/index/path", async (req, res) => {
   if (req.body.path && req.body.model && req.body.meta) {
     handleIndexPath(req.body.path, req.body.meta, req.body.model, res);
@@ -136,6 +148,11 @@ app.post("/api/index/path", async (req, res) => {
     res.status(500);
     res.end();
   }
+});
+
+app.get("/api/search/:query", async (req, res) => {
+  const data = await SearchXng().search("rich");
+  res.send(data);
 });
 
 app.get("/api/index/list", async (req, res) => {
@@ -199,7 +216,6 @@ app.post("/api/messages/fav", async (req, res) => {
   try {
     await toggleFav(chatId);
     const history = await ListMessages();
-    console.log({ history });
     eventBus.emit("update_history", { message: history });
     res.send("OK");
   } catch (e) {
@@ -212,7 +228,6 @@ app.delete("/api/messages/:id", async (req, res) => {
   try {
     Messages().delete(req.params.id);
     const history = await ListMessages();
-    console.log({ history });
     eventBus.emit("update_history", { message: history });
   } catch (e) {
     console.log("e", e.message);
@@ -222,7 +237,6 @@ app.delete("/api/messages/:id", async (req, res) => {
 
 app.get("/api/messages/:id", async (req, res) => {
   try {
-    console.log(req.params);
     const messages = RetrieveConversation(req.params.id);
     res.send(messages);
   } catch (e) {
@@ -276,12 +290,10 @@ eventBus.on("chat:streaming", (message) => {
 });
 
 eventBus.on("chat:new", (message) => {
-  console.log("emit new chat", message);
   io.emit("chat:new", message.message);
 });
 
 eventBus.on("update_history", (message) => {
-  console.log("emit history", message);
   io.emit("update_history", message.message);
 });
 

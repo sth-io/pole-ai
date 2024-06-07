@@ -2,6 +2,7 @@ import {
   Box,
   FormControl,
   Slider,
+  Stack,
   TextField,
   Tooltip,
   Typography,
@@ -24,7 +25,7 @@ const NumberControl = ({
   min,
   max,
   decimal,
-  step = 1
+  step = 1,
 }) => {
   const minmax = {};
   if (min) {
@@ -33,22 +34,22 @@ const NumberControl = ({
   if (max) {
     minmax.max = decimal ? max / decimal : max;
   }
-
   return (
-    <Box>
+    <Stack direction={"row"}>
       <Tooltip title={tooltip}>
-        <Typography id="input-slider" gutterBottom>
-          {label} {value && " - "}{" "}
-          {value && parseFloat(value).toFixed(countDecimals(decimal ?? 1))}
+        <Typography sx={{ minWidth: "120px" }} id="input-slider" gutterBottom>
+          {label}
         </Typography>
       </Tooltip>
       <Slider
+        getAriaValueText={() => value && parseFloat(value).toFixed(countDecimals(decimal ?? 0))}
         value={value ? value / (decimal ?? 1) : ""}
         onChange={(e) => onChange(e.target.value * (decimal ?? 1))}
+        valueLabelDisplay="auto"
         step={step}
         {...minmax}
       />
-    </Box>
+    </Stack>
   );
 };
 
@@ -101,7 +102,11 @@ export const ModelTuner = ({ model, options, setOptions }) => {
           );
         })}
         <Tooltip title="reset tuning">
-          <ButtonSth fullWidth  sx={{margin: '15px 0 0 0'}} onClick={() => setOptions()}>
+          <ButtonSth
+            fullWidth
+            sx={{ margin: "15px 0 0 0" }}
+            onClick={() => setOptions()}
+          >
             reset
           </ButtonSth>
         </Tooltip>

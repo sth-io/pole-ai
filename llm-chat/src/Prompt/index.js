@@ -5,7 +5,14 @@ import { ButtonIcon } from "../LayoutComponents/Button";
 import { FormStyled } from "./styled";
 import { send, useChatStore, usePrompt, useSocket } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
-import { InputAdornment, InputBase } from "@mui/material";
+import {
+  FormControl,
+  FormControlLabel,
+  InputAdornment,
+  InputBase,
+  Switch,
+  styled,
+} from "@mui/material";
 import { colors } from "../LayoutComponents/theme";
 import { emit } from "../Sockets/eventBus";
 
@@ -17,19 +24,23 @@ export const Prompt = () => {
       isStreaming,
     })
   );
-  const { chat, toggleChatMessage, chatId } = useChatStore(
-    ({ chat, toggleChatMessage, chatId }) => ({
-      chat,
-      toggleChatMessage,
-      chatId
-    })
-  );
+  const { chat, toggleChatMessage, chatId, ragOptions, ragOptionsSetter } =
+    useChatStore(
+      ({ chat, toggleChatMessage, chatId, ragOptions, ragOptionsSetter }) => ({
+        chat,
+        toggleChatMessage,
+        chatId,
+        ragOptions,
+        ragOptionsSetter,
+      })
+    );
+
   // const send = useSocket((state) => state.send);
 
   const submit = (e) => {
     e.preventDefault();
     if (isStreaming) {
-     emit('chat:cancel', chatId) 
+      emit("chat:cancel", chatId);
     } else {
       send(prompt);
       setPrompt("");
@@ -55,7 +66,7 @@ export const Prompt = () => {
   return (
     <div style={{ width: "100%" }}>
       <FormStyled
-        sx={{ marginLeft: 0 }}
+        style={{ display: "flex", flexDirection: "column" }}
         onSubmit={(e) => {
           submit(e);
         }}
@@ -110,7 +121,27 @@ export const Prompt = () => {
             }
           />
         </div>
+        <div>
+          <StyledLabel
+            sx={{ "MuiTypography-root": { fontSize: "10px" } }}
+            control={
+              <Switch
+                size="small"
+                checked={ragOptions.useSearch}
+                onChange={(e, value) => ragOptionsSetter("useSearch", value)}
+              />
+            }
+            label="Use search queries"
+          />
+        </div>
       </FormStyled>
     </div>
   );
 };
+
+const StyledLabel = styled(FormControlLabel)`
+  padding-left: 10px;
+  & .MuiTypography-root {
+    font-size: 12px;
+  }
+`;

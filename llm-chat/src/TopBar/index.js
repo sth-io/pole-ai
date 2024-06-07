@@ -71,7 +71,7 @@ const ChatStatus = () => {
     statuses.push({
       name: "options",
       icon: <TuneRoundedIcon />,
-      tooltipContent: "model tuned",
+      tooltipContent: `model tuned ${JSON.stringify(options)}`,
       action: () => setOptions(),
     });
   }

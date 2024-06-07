@@ -37,7 +37,7 @@ export const OPTIONS = {
   },
   //   Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (defaultValue: 1)
   tfs_z: {
-    label: 'tail free sampling',
+    label: 'tail free',
     type: "Number",
     min: 1,
     max: 10,

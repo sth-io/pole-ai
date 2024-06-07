@@ -7,6 +7,8 @@ import {
   ListItemText,
   Typography,
   Slider,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { ButtonIcon } from "../LayoutComponents/Button";
@@ -65,7 +67,7 @@ export const Collections = ({ trigger }) => {
         subheader={<li />}
       >
         {collections.length === 0 &&
-          `There are no Personas. Start with creating one`}
+          `There are no files. Start with indexing one`}
         {collections.map((item) => (
           <ListItem
             sx={{ padding: 0, borderTop: "1px solid #e5e5e5" }}
@@ -109,6 +111,15 @@ export const Collections = ({ trigger }) => {
         onChange={(e) => ragOptionsSetter("chunks", e.target.value)}
         min={1}
         max={50}
+      />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={ragOptions.useSearch}
+            onChange={(e, value) => ragOptionsSetter("useSearch", value)}
+          />
+        }
+        label="Use search queries"
       />
     </div>
   );

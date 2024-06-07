@@ -62,6 +62,7 @@ export const Sockets = () => {
           socket.emit(id, content);
           break;
         case "chat:cancel":
+          usePrompt.setState(() => ({ isStreaming: false}))
           socket.emit(id, content);
         default:
           console.log("invalid message");

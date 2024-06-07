@@ -29,6 +29,10 @@ const ollama = {
   },
 };
 
+const searchXng = {
+  url: process.env.SEARCHXNG_URL || `http://192.168.0.172:6553`
+}
+
 const server = {
   port: process.env.server_port || 3000,
   socketPort: process.env.scoket_port || 3001
@@ -37,7 +41,7 @@ const server = {
 
 
 const getConfig = () => {
-  return { mongo, chroma, ollama, opensearch, server };
+  return { mongo, chroma, ollama, opensearch, server, searchXng };
 };
 
 export const config = getConfig();

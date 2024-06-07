@@ -73,14 +73,18 @@ const Sidebar = () => {
         width: "385px",
       }}
     >
-      <Loader />
-      <p style={{ fontSize: 18, color: "#000", margin: "0" }}>
-        <span style={{ fontWeight: "bold" }}>pole</span>{" "}
-        <span style={{ color: colors.tertiary }}>assistant</span>
-      </p>
-      <p style={{ color: colors.tertiary, margin: "0 0 20px", fontSize: 12 }}>
-        v{packagejson.version}
-      </p>
+      <div style={{ paddingLeft: "20px" }}>
+        <div style={{ paddingLeft: "20px" }}>
+          <Loader />
+        </div>
+        <p style={{ fontSize: 18, color: "#000", margin: "0" }}>
+          <span style={{ fontWeight: "bold" }}>pole</span>{" "}
+          <span style={{ color: colors.tertiary }}>assistant</span>
+        </p>
+        <p style={{ color: colors.tertiary, margin: "0 0 20px", fontSize: 12 }}>
+          v{packagejson.version}
+        </p>
+      </div>
       <StyledAccordion
         elevation={0}
         onChange={() => panelSetter("model")}

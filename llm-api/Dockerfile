@@ -1,5 +1,5 @@
-ARG NODE_VERSION=20.12.2
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine as base
+ARG NODE_VERSION=20-slim
+FROM --platform=linux/amd64 node:${NODE_VERSION} as base
 WORKDIR /usr/src/app
 FROM base as deps
 RUN --mount=type=bind,source=package.json,target=package.json \

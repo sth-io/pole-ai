@@ -1,3 +1,10 @@
+# 0.4.6 [07-06-2024]
+
+- minor ui improvemenets
+- socket behavior extended
+- added searchxng support with results ranking
+- adjusted some prompts
+
 # 0.4.3 [04-06-2024]
 
 - Extended socket support
