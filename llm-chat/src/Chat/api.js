@@ -30,5 +30,5 @@ export const API = {
     const url = `${config.apiUrl}/api/messages/list`;
     const response = await makeQuery(url, "GET");
     return response.json();
-  }
+  },
 };

@@ -3,6 +3,7 @@ import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
 import { responseToChat } from "../Chat/model";
 import { socket } from "./socket";
 import { useStatusSnackbar } from "../Snackbar/store";
+import { emitEvent } from './eventBus'
 
 export const Sockets = () => {
   useEffect(() => {
@@ -37,6 +38,7 @@ export const Sockets = () => {
           chat: responseToChat(useChatStore.getState().chat, message),
         });
       } else {
+        emitEvent('tts:chunks', message.chunk) 
         useCurrentAnswer.setState({
           currentAnswer: message?.content,
           questionSend: false,

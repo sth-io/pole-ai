@@ -13,14 +13,24 @@ export const prompts = {
   index_code:
     () => `You're indexing machine. When user sends message you'll answer only in valid JSON, precisely and on point by following this template:
   { description: [biref description of a file], language: [language of the file], functions: [JSON array of functions in the code files]}`,
-  should_search: (question) => `
-  You're a machine that decides whether we should search the internet to answer the question or the model will be able to answer without it. You're answering only with true or false depending if the search is needed. Don't answer the user question itself. Here's the user question: "${question}"
-  `,
   geneare_search_query: (question) => `
   You're a search query parser. For every input you provide a search query that will lead to best results that will allow to answer user question. You're providing search query only. The question is: "${question}"`,
   pick_search_result: (results, question) => `
   You're a search machine. When given the list of websites and a question you return full url of the one that should contain information that should help answer the question.
-  These are search results: ${JSON.stringify(results.map(elem => ({ url: elem.url, title: elem.title, content: elem.content})))}.
+  These are search results: ${JSON.stringify(
+    results.map((elem) => ({
+      url: elem.url,
+      title: elem.title,
+      content: elem.content,
+    }))
+  )}.
   This is the question: "${question}"
-  `
+  `,
+  should_search: (question) => `
+  question: ${question} context: Should we rely on your knowledge to answer this question or seek external verification through an internet search? Please respond with one of the following options:
+* False - Rely on LLM Knowledge: The question can be answered accurately using general knowledge and explanations.
+* True - Seek External Verification: The question requires specialized, technical, or up-to-date information that may not be available in my training data. 
+
+Answer with true or false only.
+  `,
 };

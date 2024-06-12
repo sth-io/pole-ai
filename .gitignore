@@ -10,6 +10,7 @@ lerna-debug.log*
 
 build
 
+db
 db/*
 llm-api/storage/*
 llm-api/system_storage/*

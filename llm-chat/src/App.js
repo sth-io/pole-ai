@@ -15,6 +15,8 @@ import { Modal, Paper } from "@mui/material";
 import { FlowBuilder } from "./RagFlow";
 import { Sockets } from "./Sockets";
 import { StatusSnackbar } from "./Snackbar";
+import { ReadMessage } from "./Messages/readMessage";
+import { SystemStatus } from "./System/status";
 
 const drawerWidth = 400;
 
@@ -118,6 +120,7 @@ function App() {
           <TopBar setMenuOpen={handleDrawerToggle} />
           <MainContainer style={{ height: `${windowHeight - 50}px` }}>
             <Chat />
+            <ReadMessage />
             <Prompt />
           </MainContainer>
         </Box>
@@ -129,6 +132,7 @@ function App() {
       >
         <FlowBuilder />
       </Modal>
+      <SystemStatus />
     </ThemeProvider>
   );
 }

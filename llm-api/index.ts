@@ -25,7 +25,7 @@ import { Persona } from "./src/api/Personas";
 import { Messages } from "./src/api/Messages";
 import eventBus from "./src/interfaces/eventBus";
 import { SearchXng } from "./src/interfaces/searchxng";
-import { TFJS } from "./src/interfaces/tfjs";
+import { proxyTTS } from "./src/api/tts";
 
 console.log("[sys] initialising directories");
 InitStore();
@@ -67,6 +67,8 @@ app.use((req, res, next) => {
 // app.options("*", function (req, res) {
 //   res.send(200);
 // });
+
+app.get('/api/tts', proxyTTS)
 
 app.post("/api/meta", async (req, res) => {
   res.header("Cache-Control", "no-cache");
@@ -247,7 +249,14 @@ app.get("/api/messages/:id", async (req, res) => {
 
 app.get("/api/status", (req, res) => {
   res.status(200);
-  res.send("ok");
+  res.send({
+    availableServices: {
+      ollama: !!process.env.OLLAMA_SERVER,
+      web_search: !!process.env.SEARCHXNG_URL, 
+      chroma: !!process.env.CHROMA_SERVER,
+      coqui: !!process.env.COQUI_URL
+    }
+  });
 });
 
 // Have Node serve the files for our built React app

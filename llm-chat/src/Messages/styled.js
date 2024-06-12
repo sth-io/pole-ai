@@ -80,7 +80,7 @@ export const MsgOptions = styled.div`
   transition: opacity 0.6s;
   display: flex;
   flex-direction: column;
-  row-gap: 10px;
+  row-gap: 0px;
 `;
 
 export const MsgContainer = styled.div`
@@ -99,6 +99,10 @@ export const MsgContainer = styled.div`
     justify-content: flex-end;  
   `
       : ""}
+
+  @media (max-width: 1024px) {
+    padding: 0px !important;
+  }
 `;
 
 export const ContainerStyled = styled.div`

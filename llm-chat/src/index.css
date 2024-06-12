@@ -28,8 +28,12 @@ code {
   display: inline-block;
   width: auto;
   position: inherit;
+  word-break: break-all;
+  max-width:100%;
 }
+
 pre {
+  max-width:100%;
   position: relative;
   padding: 10px 5px;
   margin: 0;
@@ -41,11 +45,14 @@ pre {
   white-space: -pre-wrap;      /* Opera 4-6 */
   white-space: -o-pre-wrap;    /* Opera 7 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  word-break: break-all;
 }
 
 pre code {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .main-highlighter-relative {

@@ -105,7 +105,7 @@ export const getUrlData = async (url, chatId) => {
       url,
     };
   } catch (e) {
-    console.log(e)
+    console.log(e);
     eventBus.emit("error", {
       chatId: chatId,
       msg: {
@@ -144,7 +144,7 @@ export const pullWebsite = async (
   if (!urls || urls.length === 0) {
     return { prompt: "", url: "" };
   }
-  const substrLength = options.system ? 0 : 1
+  const substrLength = options.system ? 0 : 1;
   return getUrlData(urls[0].substring(substrLength), current.chatId);
 };
 
@@ -345,7 +345,7 @@ export const streamingChat = async (requestData) => {
         } else {
           eventBus.emit("chat:answer", {
             chatId: msg.chatId,
-            message: { content: collectedChunks },
+            message: { content: collectedChunks, chunk: json.message.content },
           });
         }
       });

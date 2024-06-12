@@ -6,3 +6,12 @@ export const emit = (id, content) => {
     })
   );
 };
+
+export const emitEvent = (id, text) => {
+  window.dispatchEvent(
+    new CustomEvent(id, {
+      bubbles: true,
+      detail: { content: text },
+    })
+  );
+}

@@ -9,6 +9,7 @@ import {
 import { ButtonIcon } from "../LayoutComponents/Button";
 import ReactMarkdown from "react-markdown";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
 import CachedIcon from "@mui/icons-material/Cached";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
@@ -17,6 +18,8 @@ import { Chip, Container, Modal, Paper, Stack } from "@mui/material";
 import { Highlighter } from "rc-highlight";
 import { trimText } from "../utils/text";
 import { Alternatives } from "./Alternatives";
+import { emitEvent } from "../Sockets/eventBus";
+import { useSystem } from "../System/model";
 
 const modalStyle = {
   position: "absolute",
@@ -182,6 +185,7 @@ export const Message = React.memo(
         toggle();
       }
     };
+    const system = useSystem((state) => state.status);
 
     return (
       <>
@@ -214,7 +218,21 @@ export const Message = React.memo(
             {message.role === "assistant" && <MessageStats message={message} />}
           </Msg>
           <MsgOptions>
+            {message.role === "assistant" && system.coqui && (
+              <Tooltip disableInteractive title="Read the message">
+                <Container disableGutters>
+                  <ButtonIcon
+                    onClick={() => emitEvent("tts", message.content)}
+                    transparent="true"
+                    size="small"
+                  >
+                    <RecordVoiceOverIcon />
+                  </ButtonIcon>
+                </Container>
+              </Tooltip>
+            )}
             <Tooltip
+              disableInteractive
               title={`Toggle - ${
                 message.filtered ? "include" : "exclude"
               } this message in AI context`}
@@ -234,7 +252,10 @@ export const Message = React.memo(
               </Container>
             </Tooltip>
             {message.role === "assistant" && (
-              <Tooltip title="Diverge - start a new conversation from this point">
+              <Tooltip
+                disableInteractive
+                title="Diverge - start a new conversation from this point"
+              >
                 <Container disableGutters>
                   <ButtonIcon
                     onClick={() => diverge(message.stamp)}

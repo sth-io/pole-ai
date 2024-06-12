@@ -18,12 +18,13 @@ import Personas from "../Personas";
 import { trimText } from "../utils/text";
 import { colors } from "../LayoutComponents/theme";
 import packagejson from "../../package.json";
-import { SystemSettings } from "../System/systemSettings";
 import { Loader } from "../LayoutComponents/Loader";
+import { useSystem } from "../System/model";
 
 const StyledAccordion = styled(Accordion)``;
 
 const Sidebar = () => {
+  const system = useSystem((state) => state.status);
   const {
     model,
     setModel,
@@ -85,39 +86,43 @@ const Sidebar = () => {
           v{packagejson.version}
         </p>
       </div>
-      <StyledAccordion
-        elevation={0}
-        onChange={() => panelSetter("model")}
-        sx={{ p: "10px" }}
-      >
-        <ModelPicker
-          getModels={getModels}
-          models={models}
-          setModel={setModel}
-          model={model}
-          trigger={true}
-          options={options}
-          setOptions={setOptions}
-        />
-      </StyledAccordion>
-      <StyledAccordion elevation={0} onChange={() => panelSetter("tuner")}>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          aria-controls="panel1-content"
-          id="panel1-header"
-        >
-          <TuneIcon sx={{ m: "0 10px 0 0" }} fontSize="small" />
-          {`Model tune`}
-        </AccordionSummary>
-        <AccordionDetails>
-          <ModelTuner
-            model={model}
-            trigger={panels.tuner}
-            options={options}
-            setOptions={setOptions}
-          />
-        </AccordionDetails>
-      </StyledAccordion>
+      {system.ollama && (
+        <>
+          <StyledAccordion
+            elevation={0}
+            onChange={() => panelSetter("model")}
+            sx={{ p: "10px" }}
+          >
+            <ModelPicker
+              getModels={getModels}
+              models={models}
+              setModel={setModel}
+              model={model}
+              trigger={true}
+              options={options}
+              setOptions={setOptions}
+            />
+          </StyledAccordion>
+          <StyledAccordion elevation={0} onChange={() => panelSetter("tuner")}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="panel1-content"
+              id="panel1-header"
+            >
+              <TuneIcon sx={{ m: "0 10px 0 0" }} fontSize="small" />
+              {`Model tune`}
+            </AccordionSummary>
+            <AccordionDetails>
+              <ModelTuner
+                model={model}
+                trigger={panels.tuner}
+                options={options}
+                setOptions={setOptions}
+              />
+            </AccordionDetails>
+          </StyledAccordion>
+        </>
+      )}
       <StyledAccordion elevation={0} onChange={() => panelSetter("tuner")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
@@ -131,20 +136,22 @@ const Sidebar = () => {
           <Personas />
         </AccordionDetails>
       </StyledAccordion>
-      <StyledAccordion elevation={0} onChange={() => panelSetter("files")}>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          aria-controls="panel1-content"
-          id="panel1-header"
-        >
-          <SourceOutlinedIcon sx={{ m: "0 10px 0 0" }} fontSize="small" />
-          {collection ? `Files: ` : `Select files`}
-          <b>{trimText(collection, 30)}</b>
-        </AccordionSummary>
-        <AccordionDetails>
-          <FileList trigger={panels.files} />
-        </AccordionDetails>
-      </StyledAccordion>
+      {system.chroma && (
+        <StyledAccordion elevation={0} onChange={() => panelSetter("files")}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1-content"
+            id="panel1-header"
+          >
+            <SourceOutlinedIcon sx={{ m: "0 10px 0 0" }} fontSize="small" />
+            {collection ? `Files: ` : `Select files`}
+            <b>{trimText(collection, 30)}</b>
+          </AccordionSummary>
+          <AccordionDetails>
+            <FileList trigger={panels.files} />
+          </AccordionDetails>
+        </StyledAccordion>
+      )}
       <StyledAccordion elevation={0} onChange={() => panelSetter("history")}>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}

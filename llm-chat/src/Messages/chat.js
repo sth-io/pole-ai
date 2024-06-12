@@ -105,7 +105,7 @@ const CurrentAnswer = ({ contentRef }) => {
       if (
         !autoScroll &&
         currentScroll > lastScroll &&
-        currentScroll > scrollHeight - clientHeight - 10
+        currentScroll > scrollHeight - clientHeight - 50
       ) {
         setAutoScroll(true);
       }

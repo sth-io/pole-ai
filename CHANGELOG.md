@@ -1,3 +1,10 @@
+# 0.5.0 [13-06-2024]
+
+- tts support added
+- system status added
+- improved prompt for search decision
+- minor style fixes
+
 # 0.4.6 [07-06-2024]
 
 - minor ui improvemenets

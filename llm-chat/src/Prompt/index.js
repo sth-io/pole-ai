@@ -6,7 +6,6 @@ import { FormStyled } from "./styled";
 import { send, useChatStore, usePrompt, useSocket } from "../Chat/chatContext";
 import { FileUploadComponent } from "./FileUpload";
 import {
-  FormControl,
   FormControlLabel,
   InputAdornment,
   InputBase,
@@ -15,8 +14,15 @@ import {
 } from "@mui/material";
 import { colors } from "../LayoutComponents/theme";
 import { emit } from "../Sockets/eventBus";
+import { useRead } from "../Messages/readMessage/model";
+import { useSystem } from "../System/model";
 
 export const Prompt = () => {
+  const system = useSystem((state) => state.status);
+  const { readingEnabled, setTTS } = useRead(({ setTTS, readingEnabled }) => ({
+    setTTS,
+    readingEnabled,
+  }));
   const { prompt, setPrompt, isStreaming } = usePrompt(
     ({ prompt, setPrompt, isStreaming }) => ({
       prompt,
@@ -122,17 +128,32 @@ export const Prompt = () => {
           />
         </div>
         <div>
-          <StyledLabel
-            sx={{ "MuiTypography-root": { fontSize: "10px" } }}
-            control={
-              <Switch
-                size="small"
-                checked={ragOptions.useSearch}
-                onChange={(e, value) => ragOptionsSetter("useSearch", value)}
-              />
-            }
-            label="Use search queries"
-          />
+          {system.web_search && (
+            <StyledLabel
+              sx={{ "MuiTypography-root": { fontSize: "10px" } }}
+              control={
+                <Switch
+                  size="small"
+                  checked={ragOptions.useSearch}
+                  onChange={(e, value) => ragOptionsSetter("useSearch", value)}
+                />
+              }
+              label="Use search queries"
+            />
+          )}
+          {system.coqui && (
+            <StyledLabel
+              sx={{ "MuiTypography-root": { fontSize: "10px" } }}
+              control={
+                <Switch
+                  size="small"
+                  checked={readingEnabled}
+                  onChange={(e, value) => setTTS(value)}
+                />
+              }
+              label="Enable TTS"
+            />
+          )}
         </div>
       </FormStyled>
     </div>

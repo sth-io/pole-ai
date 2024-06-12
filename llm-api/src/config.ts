@@ -1,26 +1,12 @@
 require('dotenv').config()
 
-// currently not in use
-const mongo = {
-  server: process.env.MONGO_SERVER || `192.168.0.172`,
-  port: process.env.MONGO_PORT || `27017`,
-  db: process.env.MONGO_DB || `llm`,
-  user: process.env.MONGO_USER || `llm`,
-  password: process.env.MONGO_PASSWORD || `iU3%s5mK2QkBvW`,
-};
-
-// currently not in use
-const opensearch = {
-  server: process.env.OPENSEARCH_SERVER || `http://192.168.0.172:9200`
-}
-
 const chroma = {
-  server: process.env.CHROMA_SERVER || `http://192.168.0.172:8101`,
+  server: process.env.CHROMA_SERVER,
 };
 
 const ollama = {
-  server: process.env.OLLAMA_SERVER || `http://localhost:11434`,
-  fallbackModel: process.env.OLLAMA_FALLBACK_MODEL || `mistral:latest`,
+  server: process.env.OLLAMA_SERVER,
+  fallbackModel: process.env.OLLAMA_FALLBACK_MODEL,
   api: {
     base: process.env.OLLAMA_API_BASE || `api`,
     tags: process.env.OLLAMA_API_TAGS || `api/tags`,
@@ -30,7 +16,11 @@ const ollama = {
 };
 
 const searchXng = {
-  url: process.env.SEARCHXNG_URL || `http://192.168.0.172:6553`
+  url: process.env.SEARCHXNG_URL
+}
+
+const coqui = {
+  url:  process.env.COQUI_URL
 }
 
 const server = {
@@ -41,7 +31,7 @@ const server = {
 
 
 const getConfig = () => {
-  return { mongo, chroma, ollama, opensearch, server, searchXng };
+  return { chroma, ollama, server, searchXng, coqui };
 };
 
 export const config = getConfig();
