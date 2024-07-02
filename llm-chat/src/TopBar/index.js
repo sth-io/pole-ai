@@ -12,6 +12,7 @@ import SourceOutlinedIcon from "@mui/icons-material/SourceOutlined";
 import { Chip, Stack, Tooltip } from "@mui/material";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
 import { trimText } from "../utils/text";
+import { PickTags } from "../Tags";
 
 const ChatStatus = () => {
   const { file, setFile } = usePrompt(({ file, setFile }) => ({
@@ -109,8 +110,9 @@ const ChatStatus = () => {
 };
 
 export const TopBar = ({ setMenuOpen, menuOpen }) => {
-  const { newChat } = useChatStore(({ newChat }) => ({
+  const { newChat, chat } = useChatStore(({ newChat, chat }) => ({
     newChat,
+    chat,
   }));
 
   return (
@@ -120,13 +122,14 @@ export const TopBar = ({ setMenuOpen, menuOpen }) => {
           <ButtonIcon
             sx={{ flex: 1, display: { md: "none" } }}
             color="secondary"
-            transparent
+            transparent="true"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <MenuRoundedIcon />
           </ButtonIcon>
 
           <ChatStatus />
+          {chat.length > 0 && <PickTags />}
         </div>
 
         <div style={{ display: "flex" }}>

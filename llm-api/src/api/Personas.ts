@@ -1,4 +1,4 @@
-import path from "path";
+import path, { resolve } from "path";
 import {
   GetFile,
   STORAGES,
@@ -6,6 +6,7 @@ import {
   editElement,
   removeElement,
 } from "../interfaces/filestore";
+const __dirname = resolve(".")
 
 const systemPath = () => {
   const filePath = `${STORAGES().system}/personas.json`;
@@ -15,7 +16,7 @@ const systemPath = () => {
 
 const addPersona = async (persona) => {
   const file = systemPath();
-  await appendFile(file, persona, "");
+  await appendFile(file, persona, "", );
 };
 
 const getPersonas = async () => {

@@ -3,6 +3,7 @@ import eventBus from "./eventBus";
 
 import axios from "axios";
 import { config } from "../config";
+import { Severity, log } from "../utils/logging";
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -35,7 +36,7 @@ export const SearchXng = () => {
             status: tries === 1 ? "error" : "warning",
           },
         });
-        console.log(e);
+        log(Severity.error, "SearchXng", e.message);
         if (tries > 1) {
           await sleep(500);
           return call(tries - 1);

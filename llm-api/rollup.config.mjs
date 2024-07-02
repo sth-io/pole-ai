@@ -5,11 +5,11 @@ export default {
   input: './index.ts',
   output: {
     file: './dist/bundle.js',
-    format: 'cjs'
+    format: 'esm'
   },
   plugins: [
     typescript({
-      tsconfig: './tsconfig.json'
+      tsconfig: './tsconfig.json',
     })
   ]
 };

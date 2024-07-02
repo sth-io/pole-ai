@@ -109,7 +109,7 @@ export const Prompt = () => {
             endAdornment={
               <InputAdornment position="end" style={{ alignSelf: "flex-end" }}>
                 <ButtonIcon
-                  transparent
+                  transparent="true"
                   size="small"
                   type="submit"
                   edge="end"

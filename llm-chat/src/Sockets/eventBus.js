@@ -14,4 +14,4 @@ export const emitEvent = (id, text) => {
       detail: { content: text },
     })
   );
-}
+};

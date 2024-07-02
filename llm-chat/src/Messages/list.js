@@ -2,15 +2,17 @@ import React, { useEffect } from "react";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import CircleIcon from "@mui/icons-material/Circle";
 import ListItemButton from "@mui/material/ListItemButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { ButtonIcon } from "../LayoutComponents/Button";
 import { API } from "./api";
 import { colors } from "../LayoutComponents/theme";
 import { useChatStore } from "../Chat/chatContext";
-import { Divider, Typography } from "@mui/material";
+import { Divider, ListItemIcon, Typography } from "@mui/material";
 import { format } from "date-fns";
 import { trimText } from "../utils/text";
+import { Tags } from "../Tags";
 
 const sortDescWithFav = (a, b) => {
   // Separate favourites and non-favourites
@@ -24,11 +26,12 @@ const sortDescWithFav = (a, b) => {
   return timestampB - timestampA;
 };
 
-const ListHistory = ({ history, setChatId, chatId }) => {
+const ListHistory = ({ history, setChatId, chatId, tags }) => {
   const commonStyle = { cursor: "pointer" };
   const deleteElement = async (chatId) => {
     await API.delete(chatId);
   };
+
   return (
     <List
       sx={{
@@ -60,6 +63,15 @@ const ListHistory = ({ history, setChatId, chatId }) => {
             </ButtonIcon>
           }
         >
+          <ListItemIcon sx={{ minWidth: "25px" }}>
+            <CircleIcon
+              fontSize="10"
+              sx={{
+                color:
+                  tags.find((tag) => tag.tag === item.tag) ?? "transparent",
+              }}
+            />
+          </ListItemIcon>
           <ListItemButton
             sx={{ padding: 0 }}
             onClick={() => setChatId(item.chatId)}
@@ -71,7 +83,7 @@ const ListHistory = ({ history, setChatId, chatId }) => {
                   ? { ...commonStyle, color: colors.accent }
                   : commonStyle
               }
-              primary={trimText(item.title, 110)}
+              primary={trimText(item.title.replace(/"/g, ""), 110)}
               secondary={
                 <Typography variant="caption" display="block">
                   {format(new Date(item.timestamp), "dd-MM-yyyy HH:mm")}
@@ -86,17 +98,29 @@ const ListHistory = ({ history, setChatId, chatId }) => {
 };
 
 export const MessageList = ({ trigger }) => {
-  const { setChatId, chatId, history } = useChatStore(
-    ({ setChatId, chatId, history }) => ({
+  const { setChatId, chatId, history, tags, selectedTags } = useChatStore(
+    ({ setChatId, chatId, history, tags, selectedTags }) => ({
       setChatId,
       chatId,
       history,
+      tags,
+      selectedTags,
     })
   );
   const sorted = history.sort(sortDescWithFav);
 
+  const filterByTags = (elem) => {
+    if (!elem.title) {
+      return false;
+    }
+    if (selectedTags.length === 0) return true;
+    return selectedTags.includes(elem.tag);
+  };
+
+
   return (
     <div style={{ padding: "0 0 40px 0" }}>
+      <Tags />
       <Divider
         textAlign="left"
         sx={{ p: "10px 0 10px 0", background: colors.base, color: "#fff" }}
@@ -104,9 +128,10 @@ export const MessageList = ({ trigger }) => {
         ♥ favourites
       </Divider>
       <ListHistory
-        history={sorted.filter((elem) => elem.favourite)}
+        history={sorted.filter((elem) => elem.favourite).filter(filterByTags)}
         setChatId={setChatId}
         chatId={chatId}
+        tags={tags}
       />
       <Divider
         textAlign="left"
@@ -115,9 +140,10 @@ export const MessageList = ({ trigger }) => {
         ■ regular messages
       </Divider>
       <ListHistory
-        history={sorted.filter((elem) => !elem.favourite)}
+        history={sorted.filter((elem) => !elem.favourite).filter(filterByTags)}
         setChatId={setChatId}
         chatId={chatId}
+        tags={tags}
       />
     </div>
   );

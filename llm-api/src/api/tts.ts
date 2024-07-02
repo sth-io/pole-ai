@@ -1,5 +1,6 @@
 import axios from "axios";
 import { config } from "../config";
+import { Severity, log } from "../utils/logging";
 
 export const proxyTTS = (req, res) => {
   const { text, speaker_id, style_wav, language_id } = req.query;
@@ -16,7 +17,7 @@ export const proxyTTS = (req, res) => {
       res.send(response.data);
     })
     .catch((error) => {
-      console.error(error);
+      log(Severity.error, 'proxyTTS', 'error fetching data')
       res.status(500).send({ message: "Error fetching data" });
     });
 };

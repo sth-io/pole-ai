@@ -16,7 +16,7 @@ export const API = {
     const response = await makeQuery(url, "GET");
     return response.json();
   },
-  getPersonas: async (id) => {
+  getPersonas: async () => {
     const url = `${config.apiUrl}/api/personas`;
     const response = await makeQuery(url, "GET");
     return response.json();
@@ -28,6 +28,11 @@ export const API = {
   },
   getMessages: async () => {
     const url = `${config.apiUrl}/api/messages/list`;
+    const response = await makeQuery(url, "GET");
+    return response.json();
+  },
+  getTags: async () => {
+    const url = `${config.apiUrl}/api/tags/list`;
     const response = await makeQuery(url, "GET");
     return response.json();
   },

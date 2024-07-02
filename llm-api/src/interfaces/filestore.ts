@@ -1,8 +1,14 @@
 import fs from "fs-extra";
 import { mkdir } from "node:fs";
-import path from "path";
+import path, { resolve } from "path";
 import { askOllama } from "./ollama";
 import { prompts } from "./prompts";
+import { Severity, log } from "../utils/logging";
+import PQueue from "p-queue";
+import eventBus from "./eventBus";
+const __dirname = resolve(".");
+
+const QueueMap = new Map();
 
 const STORES_DEFAULT = {
   db: "../db",
@@ -27,6 +33,7 @@ export const FILES = () => {
   return [
     { path: `${STORAGES().system}/history.json`, initValue: `[]` },
     { path: `${STORAGES().system}/personas.json`, initValue: `[]` },
+    { path: `${STORAGES().system}/tags.json`, initValue: `[]` },
   ];
 };
 
@@ -58,45 +65,60 @@ export const InitStore = async () => {
  * @param data
  * @param model
  */
-export function appendFile(filePath: string, data, model) {
-  return new Promise((res, rej) => {
-    if (fs.existsSync(filePath)) {
-      // existing chat conversation
-      fs.readFile(filePath, "utf8", (err, dataFromFile) => {
-        if (err) {
-          console.log(err);
-        } else {
-          const mergedData = [...JSON.parse(dataFromFile), data];
-          fs.writeFile(filePath, JSON.stringify(mergedData), "utf8", (err) => {
-            if (err) {
-              console.log(err);
-            } else {
-              console.log("msg saved");
+export function appendFile(filePath: string, data, model, cb?) {
+  makeQueue(filePath);
+  const queue = QueueMap.get(filePath);
+  const write = () =>
+    new Promise((res, rej) => {
+      if (fs.existsSync(filePath)) {
+        // existing chat conversation
+        fs.readFile(filePath, "utf8", (err, dataFromFile) => {
+          if (err) {
+            log(Severity.error, "appendFile", `${JSON.stringify(err)}`);
+          } else {
+            const mergedData = [...JSON.parse(dataFromFile), data];
+            if (cb) {
+              cb(mergedData);
             }
-            res("ok");
-          });
-        }
-      });
-    } else {
-      // new chat convesation
-      fs.writeFile(filePath, JSON.stringify([data]), async (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          if (model) {
-            await addDescription(data, data.chatId, model);
-            res("ok");
+            fs.writeFile(
+              filePath,
+              JSON.stringify(mergedData),
+              "utf8",
+              (err) => {
+                if (err) {
+                  log(Severity.error, "appendFile", `${JSON.stringify(err)}`);
+                }
+
+                res("ok");
+              }
+            );
           }
-        }
-      });
-    }
+        });
+      } else {
+        // new chat convesation
+        fs.writeFile(filePath, JSON.stringify([data]), async (err) => {
+          if (err) {
+            log(Severity.error, "appendFile", `${JSON.stringify(err)}`);
+          } else {
+            if (model) {
+              await addDescription(data, data.chatId, model);
+              res("ok");
+            }
+          }
+        });
+      }
+    });
+
+  queue.add(() => write());
+  queue.onIdle().then(() => {
+    QueueMap.delete(filePath); // Remove the queue from the map when idle
   });
 }
 
-export const AddMessage = async (message, model) => {
+export const AddMessage = async (message, model, cb = () => {}) => {
   const filePath = `${STORAGES().messages}/${message.chatId}.json`;
   const fullPath = path.resolve(__dirname, filePath);
-  await appendFile(fullPath, message, model);
+  await appendFile(fullPath, message, model, cb);
 };
 
 export const ListMessages = () => {
@@ -119,10 +141,12 @@ export const ListMessages = () => {
 export const toggleFav = async (chatId: string) => {
   try {
     const filePath = `${STORAGES().system}/history.json`;
-    console.log(filePath);
-    await editElement(filePath, "chatId", chatId, "favourite", null, true);
+    const cb = (data) => {
+      eventBus.emit("update_history", { message: data });
+    };
+    await editElement(filePath, "chatId", chatId, "favourite", null, true, cb);
   } catch (e) {
-    console.log("error", e.message);
+    log(Severity.error, "toggleFav", e.message);
   }
 };
 
@@ -133,16 +157,18 @@ export const addDescription = async (message, chatId, model) => {
     const data = fs.readFileSync(fullPath, "utf-8");
     const exists = JSON.parse(data).find((elem) => elem.chatId === chatId);
     if (exists) {
-      console.log("chat exists");
       return;
     }
-    console.log("[add description] files ready, asking for description");
     const prompt = prompts.ask_for_description(message.content);
     const title = await askOllama(prompt, model);
-    console.log(`[add description] description generated: ${title}`);
-    appendFile(fullPath, { title, chatId, timestamp: Date.now() }, false);
+    appendFile(
+      fullPath,
+      { title, chatId, timestamp: Date.now() },
+      false,
+      () => {}
+    );
   } catch (e) {
-    console.log("error", e.message);
+    log(Severity.error, "toggleFav", e.message);
   }
 };
 
@@ -151,7 +177,7 @@ export const GetFile = (path: string, fallback: unknown = "") => {
     const contents = fs.readFileSync(path, "utf-8");
     return contents;
   } else {
-    console.log(`[sys] file ${path} not found`);
+    log(Severity.error, "GetFile", `file ${path} not found`);
     return fallback;
   }
 };
@@ -201,6 +227,13 @@ export const getAllFilesInDir = (
   return files;
 };
 
+const makeQueue = (path) => {
+  const queue = QueueMap.get(path);
+  if (!queue) {
+    const queue = new PQueue({ concurrency: 1 }); // Limit concurrency to 1 for each file
+    QueueMap.set(path, queue);
+  }
+};
 /**
  * Edit element in an array inside file
  * @param filePath
@@ -216,48 +249,79 @@ export const editElement = (
   matchValue: unknown,
   changeKey: string,
   changeValue: unknown,
-  toggle?: boolean
+  toggle?: boolean,
+  cb = (data: unknown) => {}
 ) => {
-  return new Promise((res, rej) => {
-    try {
-      const fullPath = path.resolve(__dirname, filePath);
-      const data = fs.readFileSync(fullPath, "utf-8");
-      if (!data) {
-        throw new Error(`[edit element] there's no data!`);
-      }
-
-      const parsedData = JSON.parse(data);
-      const index = parsedData.findIndex(
-        (elem) => elem[matchKey] === matchValue
-      );
-
-      if (index < 0) {
-        throw new Error(
-          `[edit element] element matching [${matchKey}=${matchValue}] does not exist`
-        );
-      }
-
-      // if key is not provided we'll replace whole object
-      parsedData[index] =
-        changeKey === null
-          ? changeValue
-          : {
-              ...parsedData[index],
-              [changeKey]: toggle ? !parsedData[index][changeKey] : changeValue,
-            };
-
-      fs.writeFile(fullPath, JSON.stringify(parsedData), "utf8", (err) => {
-        if (err) {
-          throw new Error(`[edit element] failed. Trace: ${err.message}`);
-        } else {
-          console.log("[edit element] success");
+  makeQueue(filePath);
+  const queue = QueueMap.get(filePath);
+  const write = () =>
+    new Promise((res, rej) => {
+      try {
+        const fullPath = path.resolve(__dirname, filePath);
+        const data = fs.readFileSync(fullPath, "utf-8");
+        if (!data) {
+          throw new Error(`[edit element] there's no data!`);
         }
-        res("ok");
-      });
-    } catch (e) {
-      console.log("error", e.message);
-    }
+
+        const parsedData = JSON.parse(data);
+        const index = parsedData.findIndex(
+          (elem) => elem[matchKey] === matchValue
+        );
+
+        if (index < 0) {
+          throw new Error(
+            `[edit element] element matching [${matchKey}=${matchValue}] does not exist`
+          );
+        }
+
+        // if key is not provided we'll replace whole object
+        parsedData[index] =
+          changeKey === null
+            ? changeValue
+            : {
+                ...parsedData[index],
+                [changeKey]: toggle
+                  ? !parsedData[index][changeKey]
+                  : changeValue,
+              };
+        if (cb) {
+          cb(parsedData);
+        }
+        fs.writeFile(fullPath, JSON.stringify(parsedData), "utf8", (err) => {
+          if (err) {
+            throw new Error(`[edit element] failed. Trace: ${err.message}`);
+          } else {
+            log(Severity.debug, "editElement", `${filePath} success`);
+          }
+          res("ok");
+        });
+      } catch (e) {
+        log(Severity.error, "editElement", e.message);
+      }
+    });
+
+  queue.add(() => write());
+  queue.onIdle().then(() => {
+    QueueMap.delete(filePath); // Remove the queue from the map when idle
   });
+};
+
+export const AddTag = async (tag) => {
+  const filePath = `${STORAGES().system}/tags.json`;
+  const fullPath = path.resolve(__dirname, filePath);
+  const cb = (data) => {
+    eventBus.emit("tags", { message: data });
+  };
+  await appendFile(fullPath, tag, undefined, cb);
+};
+
+export const RemoveTag = async (tag) => {
+  const filePath = `${STORAGES().system}/tags.json`;
+  const fullPath = path.resolve(__dirname, filePath);
+  const cb = (data) => {
+    eventBus.emit("tags", { message: data });
+  };
+  await removeElement(fullPath, "tag", tag, cb);
 };
 
 /**
@@ -269,37 +333,58 @@ export const editElement = (
 export const removeElement = (
   filePath: string,
   matchKey: string,
-  matchValue: unknown
+  matchValue: unknown,
+  cb?: (data: unknown) => void
 ) => {
-  try {
-    const fullPath = path.resolve(__dirname, filePath);
-    const data = fs.readFileSync(fullPath, "utf-8");
-    if (!data) {
-      throw new Error(`[edit element] file does not exist`);
-    }
+  makeQueue(filePath);
+  const queue = QueueMap.get(filePath);
+  const write = () => {
+    return new Promise((res, rej) => {
+      try {
+        const fullPath = path.resolve(__dirname, filePath);
+        const data = fs.readFileSync(fullPath, "utf-8");
+        if (!data) {
+          throw new Error(`[edit element] file does not exist`);
+        }
 
-    const filtered = JSON.parse(data).filter(
-      (elem) => elem[matchKey] !== matchValue
-    );
-    fs.writeFile(fullPath, JSON.stringify(filtered), "utf8", (err) => {
-      if (err) {
-        throw new Error(`[remove element] failed. Trace: ${err.message}`);
-      } else {
-        console.log(`[remove element] [${matchKey}=${matchValue}] success`);
+        const filtered = JSON.parse(data).filter(
+          (elem) => elem[matchKey] !== matchValue
+        );
+        if (cb) {
+          cb(filtered);
+        }
+        fs.writeFile(fullPath, JSON.stringify(filtered), "utf8", (err) => {
+          res("done");
+          if (err) {
+            log(Severity.error, "removeElement", err.message);
+          } else {
+            log(
+              Severity.info,
+              "removeElement",
+              `${filePath} [${matchKey}=${matchValue}] removed`
+            );
+          }
+        });
+      } catch (e) {
+        res("done");
+        log(Severity.error, "removeElement", e.message);
       }
     });
-  } catch (e) {
-    console.log("error", e.message);
-  }
+  };
+
+  queue.add(() => write());
+  queue.onIdle().then(() => {
+    QueueMap.delete(filePath); // Remove the queue from the map when idle
+  });
 };
 
 export const removeFile = (filePath: string) => {
   const fullPath = path.resolve(__dirname, filePath);
   fs.unlink(fullPath, (err) => {
     if (err) {
-      console.error(`[delete file] error: ${err.message}`);
+      log(Severity.error, "removeFile", err.message);
     } else {
-      console.log(`[delete file] ${fullPath} removed successfully`);
+      log(Severity.info, "removeFile", `${fullPath} removed`);
     }
   });
 };
@@ -313,9 +398,9 @@ export const cleanDir = (path: string) => {
   files.forEach((file) => {
     fs.unlink(`${path}/${file}`, (err) => {
       if (err) {
-        console.error(`[delete files] error: ${err.message}`);
+        log(Severity.error, "cleanDir", err.message);
       } else {
-        console.log(`[delete files] in dir: "${path}" successfully`);
+        log(Severity.info, "cleanDir", `${path}/${file} removed`);
       }
     });
   });
@@ -335,20 +420,24 @@ export const createFile = (filePath: string, data: string) => {
   }
 
   try {
-    fs.ensureFileSync(filePath)
+    fs.ensureFileSync(filePath);
     fs.writeFileSync(filePath, data, "utf-8");
 
-    console.log(`[create file] file created at: ${filePath}`);
+    log(Severity.info, "createFile", filePath);
   } catch (error) {
-    console.error(`[create file] failed to create file: ${error.message}`);
+    log(Severity.error, "createFile", error.message);
   }
 };
 
 export const copyFiles = async (sourceDir, destinationDir) => {
   try {
     await fs.copy(sourceDir, destinationDir);
-    console.log(`${sourceDir} has been copied to ${destinationDir}`);
+    log(
+      Severity.info,
+      "copyFiles",
+      `${sourceDir} -> ${destinationDir} success`
+    );
   } catch (err) {
-    console.error("Error:", err);
+    log(Severity.error, "copyFiles", err.message);
   }
 };

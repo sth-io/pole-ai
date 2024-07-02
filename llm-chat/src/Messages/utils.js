@@ -6,8 +6,15 @@ export const removePreviousGenerations = (chat) => {
       aggregated.push(next);
       return accumulator;
     }
-    const res = [...accumulator, { ...next, alternatives: [...aggregated] }];
-    aggregated = []
+    if (aggregated.length > 0) {
+      const ready = [...aggregated, next];
+      const chosen = ready.find((elem) => !elem.filtered) || next;
+      const res = [...accumulator, { ...chosen, alternatives: ready }];
+      aggregated = [];
+      return res;
+    }
+    const res = [...accumulator, next];
+      aggregated = [];
     return res;
   }, []);
   return deduped;

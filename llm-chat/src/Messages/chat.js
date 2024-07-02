@@ -15,6 +15,7 @@ import { useChatStore, useCurrentAnswer } from "../Chat/chatContext";
 import { API } from "./api";
 import { trimText } from "../utils/text";
 import { Loader } from "../LayoutComponents/Loader";
+import { ChatStatus } from "../Chat/Status";
 
 const StyledStack = styled(Stack)`
   gap: 10px;
@@ -97,6 +98,9 @@ const CurrentAnswer = ({ contentRef }) => {
 
     let lastScroll = 0;
     const handleScroll = (e, y) => {
+      if (!contentRef.current) {
+        return;
+      }
       const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
       const currentScroll = scrollTop;
       if (autoScroll && currentScroll < lastScroll) {
@@ -115,8 +119,10 @@ const CurrentAnswer = ({ contentRef }) => {
     contentRef.current.addEventListener("scroll", handleScroll);
 
     return () => {
-      // Cleanup: Remove the event listener when component unmounts
-      contentRef.current.removeEventListener("scroll", handleScroll);
+      if (contentRef.current) {
+        // Cleanup: Remove the event listener when component unmounts
+        contentRef.current.removeEventListener("scroll", handleScroll);
+      }
     };
   }, [autoScroll]);
   useEffect(() => {
@@ -140,9 +146,14 @@ const CurrentAnswer = ({ contentRef }) => {
           display: "flex",
           justifyContent: "center",
           paddingTop: "20px",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <Loader />
+        <div style={{ paddingBottom: "10px" }}>
+          <Loader />
+        </div>
+        <ChatStatus />
       </div>
     );
   }
@@ -179,7 +190,7 @@ export const Chat = React.memo(() => {
       chatId,
     })
   );
-  const contentRef = useRef(null);
+  const contentRef = React.createRef();
   useEffect(() => {
     const execute = async () => {
       const history = await API.getHistory(chatId);

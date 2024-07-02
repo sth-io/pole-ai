@@ -3,6 +3,7 @@ import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
 import { config } from "../config";
 import axios from "axios";
+import { Severity, log } from "../utils/logging";
 
 export const ChromaModel = (collection = "", model = "") => {
   const embeddings =
@@ -53,7 +54,7 @@ export const ChromaModel = (collection = "", model = "") => {
       //   uris: texts.map((elem) => elem.path),
       ids: texts.map((elem) => elem.id),
     };
-    console.log(payload);
+    log(Severity.debug, "addToCollection", `${JSON.stringify(payload)}`);
     const collectionUrl = `${config.chroma.server}/api/v1/collections`;
     const collectionData = await axios.post(
       collectionUrl,
@@ -72,21 +73,13 @@ export const ChromaModel = (collection = "", model = "") => {
     );
 
     const collectionId = collectionData.data.id;
-    console.log("chroma id", collectionId);
     const url = `${config.chroma.server}/api/v1/collections/${collectionId}/add`;
     const result = await axios.post(url, payload, {
       headers: {
         "Content-Type": "application/json",
       },
     });
-    console.log(result.status);
   };
-
-  // const query = async (query) => {
-  //   return (
-  //     await Chroma.fromExistingCollection(embeddings, chromaConf)
-  //   ).similaritySearchWithScore(query, 100);
-  // };
 
   const query = async (query, limit = 20) => {
     const embedding = await embed([query]);
@@ -123,8 +116,8 @@ export const ChromaModel = (collection = "", model = "") => {
   const remove = async () => {
     const queryUrl = `${config.chroma.server}/api/v1/collections/${collection}`;
     const resp = await axios.delete(queryUrl);
-    return resp.data
-  }
+    return resp.data;
+  };
 
   return {
     fromExistingCollection,

@@ -1,4 +1,5 @@
-require('dotenv').config()
+import dotenv from 'dotenv'
+dotenv.config()
 
 const chroma = {
   server: process.env.CHROMA_SERVER,

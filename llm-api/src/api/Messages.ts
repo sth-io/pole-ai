@@ -1,4 +1,4 @@
-import path from "path";
+import path, { resolve } from "path";
 import {
   STORAGES,
   addDescription,
@@ -6,6 +6,9 @@ import {
   removeElement,
   removeFile,
 } from "../interfaces/filestore";
+import eventBus from "../interfaces/eventBus"
+
+const __dirname = resolve(".");
 
 const historyPath = () => {
   const filePath = `${STORAGES().system}/history.json`;
@@ -14,7 +17,10 @@ const historyPath = () => {
 };
 
 const deleteMessage = async (chatId) => {
-  removeElement(historyPath(), "chatId", chatId);
+  const cb = (data) => {
+    eventBus.emit("update_history", { message: data });
+  }
+  removeElement(historyPath(), "chatId", chatId, cb);
   removeFile(`${STORAGES().messages}/${chatId}.json`);
 };
 
@@ -28,7 +34,7 @@ const createHistory = async (chatId, messages, model) => {
     await createFile(messagePath, JSON.stringify(messages));
     await addDescription(lastMessage, chatId, model);
   } catch (e) {
-    throw new Error(e)
+    throw new Error(e);
   }
 };
 

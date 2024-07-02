@@ -3,7 +3,8 @@ import { useChatStore, useCurrentAnswer, usePrompt } from "../Chat/chatContext";
 import { responseToChat } from "../Chat/model";
 import { socket } from "./socket";
 import { useStatusSnackbar } from "../Snackbar/store";
-import { emitEvent } from './eventBus'
+import { emitEvent } from "./eventBus";
+import { actions as StatusActions } from "../Chat/Status";
 
 export const Sockets = () => {
   useEffect(() => {
@@ -38,13 +39,22 @@ export const Sockets = () => {
           chat: responseToChat(useChatStore.getState().chat, message),
         });
       } else {
-        emitEvent('tts:chunks', message.chunk) 
+        emitEvent("tts:chunks", message.chunk);
         useCurrentAnswer.setState({
           currentAnswer: message?.content,
           questionSend: false,
         });
       }
     });
+
+    socket.on("chat:status", (message) => {
+      console.log({ message });
+      StatusActions.setStatus(message);
+    });
+    socket.on("tags", (message) => {
+      useChatStore.setState({ tags: message.message });
+    });
+
     const handler = ({ detail }) => {
       if (!detail) {
         return;
@@ -64,10 +74,20 @@ export const Sockets = () => {
           socket.emit(id, content);
           break;
         case "chat:cancel":
-          usePrompt.setState(() => ({ isStreaming: false}))
+          usePrompt.setState(() => ({ isStreaming: false }));
           socket.emit(id, content);
+          break;
+        case "tags:add":
+          socket.emit(id, content);
+          break;
+        case "tags:remove":
+          socket.emit(id, content);
+          break;
+        case "chat:change":
+          socket.emit(id, content);
+          break;
         default:
-          console.log("invalid message");
+          console.log(`invalid message ${id}: ${JSON.stringify(detail)}`);
       }
     };
 

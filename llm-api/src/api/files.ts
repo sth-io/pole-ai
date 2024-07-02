@@ -1,6 +1,6 @@
 import fs from "fs";
 import { ChromaModel } from "../interfaces/chroma";
-import path from "path";
+import path, { resolve } from "path";
 import axios from "axios";
 import * as splitter from "langchain/text_splitter";
 import {
@@ -10,7 +10,9 @@ import {
   copyFiles,
   getAllFilesInDir,
 } from "../interfaces/filestore";
+import { Severity, log } from "../utils/logging";
 
+const __dirname = resolve(".");
 const defaultExtensions = ["md", "js", "txt", "ts"].map((elem) => `.${elem}`);
 
 /**
@@ -57,7 +59,7 @@ export const vectorizeDirectory = async (
   const files = getAllFilesInDir(pathUrl, excluded_dirs).filter((elem) =>
     isSupportedFile(elem, extensions)
   );
-  console.log(`[vectorize] found ${files.length} files`);
+  log(Severity.debug, "vectorizeDirectory", `found ${files.length} files`);
   const fileCalls = files.map(
     (path) => async () =>
       await vectorizeFile(path, collection, model, extensions)
@@ -65,9 +67,13 @@ export const vectorizeDirectory = async (
   let idx = 1;
   for (const fileCall of fileCalls) {
     await fileCall();
-    console.log(`[vectorize] file ${idx} of ${files.length} done`);
+    log(
+      Severity.debug,
+      "vectorizeDirectory",
+      `file ${idx} of ${files.length} done`
+    );
   }
-  console.info("[vectorize] all files processed");
+  log(Severity.info, "vectorizeDirectory", "all done");
   return "done";
 };
 
@@ -84,7 +90,7 @@ export const vectorizeFile = async (
   const Model = ChromaModel(collection, model);
   const fileread = fs.readFileSync(pathUrl, "utf8");
 
-  console.info(`[vectorize] getting metadata for ${pathUrl}`);
+  log(Severity.debug, "vectorizeFile", `get metadata for ${pathUrl}`);
 
   // split file into chunks
   const split = new splitter.RecursiveCharacterTextSplitter({
@@ -108,7 +114,7 @@ export const vectorizeFile = async (
   const maped = chunks.map((documentSet, idx) => async () => {
     await Model.addToCollection(
       documentSet.map((doc, i) => {
-        console.log(`${pathUrl}:${idx}-${i}`);
+        log(Severity.debug, "vectorizeFile", `${pathUrl}:${idx}-${i}`);
         return {
           content: doc.pageContent,
           id: `${pathUrl}:${idx}-${i}`,
@@ -122,7 +128,7 @@ export const vectorizeFile = async (
   const sequence = async (promiseFns) => {
     for (let promiseFn of promiseFns) {
       await promiseFn();
-      console.log("chunk done");
+      log(Severity.debug, "vectorizeFile:sequence", "chunk done");
     }
   };
 
@@ -157,12 +163,12 @@ const downloadFile = async (
     response.data.pipe(writeStream);
 
     response.data.on("end", () => {
-      console.log(`File downloaded and saved as ${filename}`);
+      log(Severity.debug, "downloadFile", `saved as ${filename}`);
       writeStream.close();
       cb();
     });
   } catch (error) {
-    console.error(`Error during file download: ${error}`);
+    log(Severity.error, "downloadFile", `filed ${error}`);
   }
 };
 
@@ -180,7 +186,11 @@ export const handleIndexPath = async (userPath, meta, model, res) => {
     const fileName = url.pathname.split("/").pop();
     const hasExt = fileName.indexOf(".") > 0;
 
-    console.info(`[index] download ${fileName || meta} from ${path}`);
+    log(
+      Severity.debug,
+      "handleIndexPath",
+      `download ${fileName || meta} from ${path}`
+    );
     await downloadFile(
       userPath,
       `${fileName || meta}${hasExt ? "" : ".txt"}`,
@@ -195,10 +205,10 @@ export const handleIndexPath = async (userPath, meta, model, res) => {
     const fullTarget = path.resolve(__dirname, target);
     await copyFiles(userPath, fullTarget);
     if (fs.lstatSync(userPath).isDirectory()) {
-      console.info(`[index] initialising directory`);
+      log(Severity.debug, "handleIndexPath", "directory");
       await vectorizeDirectory(fullTarget, meta, model);
     } else {
-      console.info("[index] initialising file");
+      log(Severity.debug, "handleIndexPath", "file");
       await vectorizeFile(fullTarget, meta, model);
     }
   }

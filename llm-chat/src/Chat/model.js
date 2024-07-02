@@ -109,7 +109,7 @@ export const responseToChat = (chat, response) => {
     {
       ...response,
       role: "assistant",
-      stamp: Date.now(),
+      stamp:  new Date(response.created_at).getTime(),
     },
   ];
 };

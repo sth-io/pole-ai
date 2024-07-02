@@ -90,7 +90,7 @@ export const FileUploadComponent = () => {
           m: "0 0 22px 10px",
         }}
         onClick={() => ref.current?.click()}
-        transparent
+        transparent="true"
         size="small"
       >
         {file.context && <FilePresentRoundedIcon />}

@@ -1,3 +1,8 @@
+# 0.6.0 [29-06-2024]
+
+- multiple fixes
+- added tags
+
 # 0.5.0 [13-06-2024]
 
 - tts support added

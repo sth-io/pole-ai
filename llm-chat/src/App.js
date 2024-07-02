@@ -17,6 +17,7 @@ import { Sockets } from "./Sockets";
 import { StatusSnackbar } from "./Snackbar";
 import { ReadMessage } from "./Messages/readMessage";
 import { SystemStatus } from "./System/status";
+import { ChatStatus } from "./Chat/Status";
 
 const drawerWidth = 400;
 
@@ -86,7 +87,7 @@ function App() {
             <ButtonSth
               sx={{ display: { md: "none" } }}
               color="secondary"
-              transparent
+              transparent="true"
               onClick={() => handleDrawerClose()}
             >
               <MenuRoundedIcon />

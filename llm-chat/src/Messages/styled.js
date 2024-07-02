@@ -1,5 +1,11 @@
 import styled from "styled-components";
 import { colors } from "../LayoutComponents/theme";
+import { Container as Cnt } from "@mui/material";
+
+export const Container = styled(Cnt)`
+  max-width: 50px !important;
+  margin: 0 !importnat;
+`;
 
 export const StyledImg = styled.img`
   max-width: 400px;
@@ -73,14 +79,18 @@ export const Msg = styled.div`
 `;
 
 export const MsgOptions = styled.div`
+  background: #fff;
+  border-radius: 5px;
   position: absolute;
-  right: 0;
-  top: 10px;
+  left: -100px;
+  bottom: 0px;
   opacity: 0;
-  transition: opacity 0.6s;
+  transition: opacity 0.6s, left 0.6s;
   display: flex;
-  flex-direction: column;
   row-gap: 0px;
+  padding: 5px 10px;
+  z-index: 100;
+  justify-content: flex-start;
 `;
 
 export const MsgContainer = styled.div`
@@ -90,6 +100,7 @@ export const MsgContainer = styled.div`
 
   &:hover ${MsgOptions} {
     opacity: 1;
+    left: 0;
   }
 
   ${({ role }) =>

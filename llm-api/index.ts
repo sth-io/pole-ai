@@ -1,18 +1,26 @@
 import { Server } from "socket.io";
+import express from "express";
+import bodyParser from "body-parser";
+import http from "http";
+import helmet from "helmet";
 import cors from "cors";
-import path from "path";
+import path, { resolve } from "path";
 import multer from "multer";
 import { createServer } from "http";
 import { handleIndexPath } from "./src/api/files";
 import { config } from "./src/config";
 import { ChromaModel } from "./src/interfaces/chroma";
 import {
+  AddTag,
+  GetFile,
   InitStore,
   ListMessages,
+  RemoveTag,
   RetrieveConversation,
   STORAGES,
   cleanDir,
   editElement,
+  removeElement,
   toggleFav,
 } from "./src/interfaces/filestore";
 import {
@@ -26,8 +34,12 @@ import { Messages } from "./src/api/Messages";
 import eventBus from "./src/interfaces/eventBus";
 import { SearchXng } from "./src/interfaces/searchxng";
 import { proxyTTS } from "./src/api/tts";
+import { Severity, log } from "./src/utils/logging";
+import { Tags } from "./src/api/Tags";
 
-console.log("[sys] initialising directories");
+const __dirname = resolve(".");
+
+log(Severity.info, "sys", "initialising directories");
 InitStore();
 
 const storage = multer.diskStorage({
@@ -41,13 +53,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-const express = require("express");
-const bodyParser = require("body-parser");
 const app = express();
-const server = require("http").Server(app);
+const server = new http.Server(app);
 const port = config.server.port;
 const socketPort = config.server.socketPort;
-const helmet = require("helmet");
 
 app.use(cors());
 
@@ -68,7 +77,7 @@ app.use((req, res, next) => {
 //   res.send(200);
 // });
 
-app.get('/api/tts', proxyTTS)
+app.get("/api/tts", proxyTTS);
 
 app.post("/api/meta", async (req, res) => {
   res.header("Cache-Control", "no-cache");
@@ -77,7 +86,7 @@ app.post("/api/meta", async (req, res) => {
     const response = await getMeta(req.body, res);
     res.send(response.res);
   } catch (e) {
-    console.log("failed", e.message);
+    log(Severity.error, "api/meta", e.message);
   }
 });
 
@@ -117,12 +126,11 @@ app.post("/api/chat", async (req, res) => {
   try {
     await streamingChat(req.body);
   } catch (e) {
-    console.log("failed", e.message);
+    log(Severity.error, "api/chat", e.message);
   }
 });
 
 app.post("/api/index/upload", upload.any(), async (req, res) => {
-  console.log(req.files); // Here are your uploaded files
   const filesData = [];
 
   // req.files contains all the uploaded files
@@ -168,12 +176,10 @@ app.post("/api/index/query", async (req, res) => {
   try {
     res.header("Cache-Control", "no-cache");
     const model = ChromaModel(req.body.collection, req.body.model);
-    console.log("query start");
     const collections = await model.query(req.body.query);
-    console.log("query end");
     res.send(collections);
   } catch (e) {
-    console.log(e);
+    log(Severity.error, "/api/index/query", e.message);
   }
 });
 
@@ -191,6 +197,11 @@ app.delete("/api/index/:name", async (req, res) => {
 
 app.get("/api/model/list", async (req, res) => {
   await getModels(res);
+});
+
+app.get("/api/tags/list", async (req, res) => {
+  const tags = await Tags().get();
+  res.send(tags);
 });
 
 app.post("/api/messages/create/:id", async (req, res) => {
@@ -217,11 +228,9 @@ app.post("/api/messages/fav", async (req, res) => {
   const chatId = req.body.chatId;
   try {
     await toggleFav(chatId);
-    const history = await ListMessages();
-    eventBus.emit("update_history", { message: history });
     res.send("OK");
   } catch (e) {
-    console.log("e", e.message);
+    log(Severity.error, "/api/messages/fav", e.message);
     res.send({ error: e.message });
   }
 });
@@ -229,10 +238,8 @@ app.post("/api/messages/fav", async (req, res) => {
 app.delete("/api/messages/:id", async (req, res) => {
   try {
     Messages().delete(req.params.id);
-    const history = await ListMessages();
-    eventBus.emit("update_history", { message: history });
   } catch (e) {
-    console.log("e", e.message);
+    log(Severity.error, `/api/messages/${req.params.id}`, e.message);
     res.send({ error: e.message });
   }
 });
@@ -242,7 +249,7 @@ app.get("/api/messages/:id", async (req, res) => {
     const messages = RetrieveConversation(req.params.id);
     res.send(messages);
   } catch (e) {
-    console.log("e", e.message);
+    log(Severity.error, `/api/messages/${req.params.id}`, e.message);
     res.send({ error: e.message });
   }
 });
@@ -252,10 +259,10 @@ app.get("/api/status", (req, res) => {
   res.send({
     availableServices: {
       ollama: !!process.env.OLLAMA_SERVER,
-      web_search: !!process.env.SEARCHXNG_URL, 
+      web_search: !!process.env.SEARCHXNG_URL,
       chroma: !!process.env.CHROMA_SERVER,
-      coqui: !!process.env.COQUI_URL
-    }
+      coqui: !!process.env.COQUI_URL,
+    },
   });
 });
 
@@ -266,15 +273,9 @@ app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "./frontend", "index.html"));
 });
 
-server.listen(port, (err) => {
-  if (err) {
-    throw err;
-  }
-  /* eslint-disable no-console */
-  console.log(`
-  [sthai] server working
-  [port] ${port}
-`);
+server.listen(port, () => {
+  log(Severity.info, "pole", "server working");
+  log(Severity.info, "port", `${port}`);
 });
 
 const httpServer = createServer();
@@ -298,6 +299,11 @@ eventBus.on("chat:streaming", (message) => {
   io.to(message.chatId).emit("chat:streaming", message.message);
 });
 
+eventBus.on("chat:status", (message) => {
+  console.log({ message });
+  io.to(message.chatId).emit("chat:status", message.msg);
+});
+
 eventBus.on("chat:new", (message) => {
   io.emit("chat:new", message.message);
 });
@@ -307,7 +313,6 @@ eventBus.on("update_history", (message) => {
 });
 
 eventBus.on("error", (message) => {
-  console.log("emit error", message);
   if (message.chat) {
     io.to(message.chatId).emit("snack", message.msg);
   } else {
@@ -315,10 +320,14 @@ eventBus.on("error", (message) => {
   }
 });
 
+eventBus.on("tags", (message) => {
+  io.emit("tags", message);
+});
+
 io.on("connection", (ws) => {
   ws.emit("snack", { msg: "connected" });
   ws.on("chat:q", (message) => {
-    console.log("[chat:q]: message", message);
+    log(Severity.debug, "socket-chat:q", message);
     streamingChat(message);
   });
 
@@ -329,31 +338,46 @@ io.on("connection", (ws) => {
       controller.abort();
       delete controller[chatId];
     } else {
-      console.log("no chat to abort");
+      log(Severity.error, "socket-chat:cancel", "no chat to cancel");
     }
   });
 
+  ws.on("tags:add", async (tag) => {
+    await AddTag(tag);
+  });
+
+  ws.on("tags:remove", async (tag) => {
+    await RemoveTag(tag.tag);
+  });
+
+  ws.on("chat:change", ({ chatId, key, value }) => {
+    const filePath = `${STORAGES().system}/history.json`;
+    const cb = (data) => {
+      eventBus.emit("update_history", { message: data });
+    };
+    editElement(filePath, "chatId", chatId, key, value, undefined, cb);
+  });
+
   ws.on("join", (chatId) => {
-    console.log("joined", chatId);
+    log(Severity.info, "socket-join", chatId);
     ws.join(chatId);
   });
   ws.on("leave", (chatId) => {
-    console.log("left", chatId);
+    log(Severity.info, "socket-leave", chatId);
     ws.leave(chatId);
   });
 
   ws.on("message:toggle", ({ chatId, element, value }) => {
     const filePath = `${STORAGES().messages}/${chatId}.json`;
-    editElement(filePath, "stamp", element, "filtered", value);
+    const cb = (data) => {
+      eventBus.emit("update_history", { message: data });
+    };
+    editElement(filePath, "stamp", element, "filtered", value, undefined, cb);
   });
 });
 
 io.listen(socketPort as number);
-console.log(`
-  [socket port] ${socketPort}
-`);
-
-module.exports = server;
+log(Severity.info, "socket port", `${socketPort}`);
 
 // emit("message:toggle", {
 //   chatId: get().chatId,

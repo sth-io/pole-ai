@@ -46,8 +46,8 @@ export const send = (question, withoutAppend, history) => {
   const chatState = useChatStore.getState();
   useCurrentAnswer.setState({ questionSend: true });
   const file = usePrompt.getState().file;
-  const newState = promptToChat(
-    removePreviousGenerations(history ?? chatState.chat),
+  const newChatState = promptToChat(
+    history ?? chatState.chat,
     chatState.chatId,
     question,
     file
@@ -56,9 +56,17 @@ export const send = (question, withoutAppend, history) => {
   const hasPersona =
     persona && chatState.personas.find((p) => p.title === persona);
   // visible chat extended with required data
-  const messages = setupChat(newState, hasPersona);
+  const messages = setupChat(
+    promptToChat(
+      removePreviousGenerations(history ?? chatState.chat),
+      chatState.chatId,
+      question,
+      file
+    ),
+    hasPersona
+  );
   useChatStore.setState({
-    ...(!withoutAppend ? { chat: newState } : {}),
+    ...(!withoutAppend ? { chat: newChatState } : {}),
   });
   const data = {
     chatId: chatState.chatId,
@@ -76,9 +84,11 @@ export const send = (question, withoutAppend, history) => {
 const startId = params.get("chat_id") || uuidv4();
 export const useChatStore = create((set, get) => {
   return {
+    tags: [],
     chat: [],
     personas: [],
     models: [],
+    selectedTags: [],
     model: localStorage.getItem("model") || "",
     collection: localStorage.getItem("collection") || "",
     chatId: startId,
@@ -142,6 +152,10 @@ export const useChatStore = create((set, get) => {
       const personas = await API.getPersonas();
       set(() => ({ personas }));
     },
+    getTags: async () => {
+      const tags = await API.getTags();
+      set(() => ({ tags }));
+    },
     regenerate: async (timestamp) => {
       const index = get().chat.findIndex((m) => m.stamp === timestamp);
       set((store) => ({ chat: toggleMessage(store.chat, index) }));
@@ -178,14 +192,27 @@ export const useChatStore = create((set, get) => {
       set(() => ({ chat: [] }));
       useCurrentAnswer.setState({ currentAnswer: "" });
     },
-    toggleChatMessage: (index) => {
+    toggleChatMessage: (userIndex, timestamp, falseArray) => {
+      const index =
+        userIndex ?? get().chat.findIndex((elem) => elem.stamp === timestamp);
       const msg = get().chat[index];
+      if (!msg) {
+        return;
+      }
       emit("message:toggle", {
         chatId: get().chatId,
         element: msg.stamp,
         value: !msg.filtered,
       });
       set((store) => ({ chat: toggleMessage(store.chat, index) }));
+      if (falseArray) {
+        falseArray.forEach((item) => {
+          const fullItem = get().chat.find((elem) => elem.stamp === item);
+          if (!fullItem.filtered) {
+            useChatStore.getState().toggleChatMessage(undefined, item);
+          }
+        });
+      }
     },
     setChatId: (id) => {
       emit("leave", get().chatId);
@@ -206,7 +233,7 @@ export const useChatStore = create((set, get) => {
     getMessages: async () => {
       const data = await API.getMessages();
       set(() => ({
-        history: data
+        history: data,
       }));
     },
     newChat: () => {
@@ -238,9 +265,24 @@ export const updateUrl = (paramKey, paramValue) => {
 
 // get initial state
 const init = () => {
-  const store = useChatStore.getState()
+  const store = useChatStore.getState();
   store.getModels();
   store.getMessages();
 };
 
 init();
+
+export const actions = {
+  selectTag: (tag) => {
+    const selectedTags = useChatStore.getState().selectedTags;
+    if (selectedTags.includes(tag)) {
+      useChatStore.setState({
+        selectedTags: selectedTags.filter((t) => t !== tag),
+      });
+    } else {
+      useChatStore.setState({
+        selectedTags: [...selectedTags, tag],
+      });
+    }
+  },
+};

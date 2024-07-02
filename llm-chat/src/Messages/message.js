@@ -5,6 +5,7 @@ import {
   MsgContainer,
   MsgOptions,
   StyledImg,
+  Container,
 } from "./styled";
 import { ButtonIcon } from "../LayoutComponents/Button";
 import ReactMarkdown from "react-markdown";
@@ -14,7 +15,7 @@ import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
 import CachedIcon from "@mui/icons-material/Cached";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import Tooltip from "@mui/material/Tooltip";
-import { Chip, Container, Modal, Paper, Stack } from "@mui/material";
+import { Chip,  Modal, Paper, Stack } from "@mui/material";
 import { Highlighter } from "rc-highlight";
 import { trimText } from "../utils/text";
 import { Alternatives } from "./Alternatives";
@@ -215,72 +216,72 @@ export const Message = React.memo(
               {message.content}
             </ReactMarkdown>
             {children}
-            {message.role === "assistant" && <MessageStats message={message} />}
-          </Msg>
-          <MsgOptions>
-            {message.role === "assistant" && system.coqui && (
-              <Tooltip disableInteractive title="Read the message">
-                <Container disableGutters>
-                  <ButtonIcon
-                    onClick={() => emitEvent("tts", message.content)}
-                    transparent="true"
-                    size="small"
-                  >
-                    <RecordVoiceOverIcon />
-                  </ButtonIcon>
-                </Container>
-              </Tooltip>
-            )}
-            <Tooltip
-              disableInteractive
-              title={`Toggle - ${
-                message.filtered ? "include" : "exclude"
-              } this message in AI context`}
-            >
-              <Container disableGutters>
-                <ButtonIcon
-                  onClick={() => triggerToggle()}
-                  transparent="true"
-                  size="small"
-                >
-                  {message.filtered ? (
-                    <RadioButtonUncheckedIcon />
-                  ) : (
-                    <RadioButtonCheckedIcon />
-                  )}
-                </ButtonIcon>
-              </Container>
-            </Tooltip>
-            {message.role === "assistant" && (
+            <MsgOptions>
+              {message.role === "assistant" && system.coqui && (
+                <Tooltip disableInteractive title="Read the message">
+                  <Container sx={{ flex: 1 }} disableGutters>
+                    <ButtonIcon
+                      onClick={() => emitEvent("tts", message.content)}
+                      transparent="true"
+                      size="small"
+                    >
+                      <RecordVoiceOverIcon />
+                    </ButtonIcon>
+                  </Container>
+                </Tooltip>
+              )}
               <Tooltip
                 disableInteractive
-                title="Diverge - start a new conversation from this point"
+                title={`Toggle - ${
+                  message.filtered ? "include" : "exclude"
+                } this message in AI context`}
               >
-                <Container disableGutters>
+                <Container sx={{ flex: 1 }} disableGutters>
                   <ButtonIcon
-                    onClick={() => diverge(message.stamp)}
+                    onClick={() => triggerToggle()}
                     transparent="true"
                     size="small"
                   >
-                    <AltRouteIcon />
+                    {message.filtered ? (
+                      <RadioButtonUncheckedIcon />
+                    ) : (
+                      <RadioButtonCheckedIcon />
+                    )}
                   </ButtonIcon>
                 </Container>
               </Tooltip>
-            )}
-            {message.role === "assistant" && isLast && (
-              <Tooltip title="Regenerate - ask system to generate new response">
-                <Container disableGutters>
-                  <ButtonIcon
-                    onClick={() => regenerate(message.stamp)}
-                    transparent="true"
-                    size="small"
-                  >
-                    <CachedIcon />
-                  </ButtonIcon>
-                </Container>
-              </Tooltip>
-            )}
-          </MsgOptions>
+              {message.role === "assistant" && (
+                <Tooltip 
+                  disableInteractive
+                  title="Diverge - start a new conversation from this point"
+                >
+                  <Container sx={{ flex: 1 }} disableGutters>
+                    <ButtonIcon
+                      onClick={() => diverge(message.stamp)}
+                      transparent="true"
+                      size="small"
+                    >
+                      <AltRouteIcon />
+                    </ButtonIcon>
+                  </Container>
+                </Tooltip>
+              )}
+              {message.role === "assistant" && isLast && (
+                <Tooltip title="Regenerate - ask system to generate new response">
+                  <Container sx={{ flex: 1 }} disableGutters>
+                    <ButtonIcon
+                      onClick={() => regenerate(message.stamp)}
+                      transparent="true"
+                      size="small"
+                    >
+                      <CachedIcon />
+                    </ButtonIcon>
+                  </Container>
+                </Tooltip>
+              )}
+            </MsgOptions>
+            {message.role === "assistant" && <MessageStats message={message} />}
+          </Msg>
         </MsgContainer>
       </>
     );

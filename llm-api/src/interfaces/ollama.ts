@@ -8,8 +8,11 @@ import { jsonrepair } from "jsonrepair";
 import { ChromaModel } from "./chroma";
 import eventBus from "./eventBus";
 import { prompts } from "./prompts";
-import path from "path";
+import path, { resolve } from "path";
 import { SearchXng } from "./searchxng";
+import { Severity, log } from "../utils/logging";
+
+const __dirname = resolve(".");
 
 export const getModels = async (res) => {
   const url = `${config.ollama.server}/${config.ollama.api.tags}`;
@@ -36,8 +39,7 @@ export const askOllama = async (prompt, model, tries = 3, options = {}) => {
     return externalResponse.data.response;
   } catch (e) {
     if (tries > 0) {
-      console.log("llm opinion error", e.message);
-      console.log("retrying", requestData);
+      log(Severity.info, "askOllama", `question error, retrying`);
       function sleep(ms) {
         return new Promise((resolve) => {
           setTimeout(resolve, ms);
@@ -46,6 +48,7 @@ export const askOllama = async (prompt, model, tries = 3, options = {}) => {
       await sleep(500);
       return askOllama(prompt, model, tries - 1, options);
     } else {
+      log(Severity.error, "askOllama", e.message);
       eventBus.emit("error", {
         msg: {
           msg: `Failed to get valid response from ${model}`,
@@ -64,16 +67,17 @@ export const getMeta = async (requestData, feedback, tries = 3) => {
       system: prompts.index_code(),
       prompt: requestData.prompt,
     };
-    console.log(requestData);
+    log(Severity.debug, "getMeta", JSON.stringify(request));
     const url = `${config.ollama.server}/${config.ollama.api.generate}`;
     const response = await axios.post(url, request);
     const repaired = jsonrepair(response.data.response);
     return { res: JSON.parse(repaired), feedback };
   } catch (e) {
     if (tries > 0) {
-      console.log("retrying", feedback?.i);
+      log(Severity.info, "getMeta", "retrying");
       return await getMeta(requestData, feedback, tries - 1);
     } else {
+      log(Severity.error, "getMeta", e.message);
       eventBus.emit("error", {
         msg: {
           msg: `Failed to get valid meta data from ${requestData.model}`,
@@ -84,7 +88,7 @@ export const getMeta = async (requestData, feedback, tries = 3) => {
   }
 };
 
-export const getUrlData = async (url, chatId) => {
+export const getUrlData = async (url, chatId, status = (msg) => {}) => {
   // Parsing to markdown to preserve context
   const extractBodyContent = (content) => {
     const $ = load(content);
@@ -94,18 +98,20 @@ export const getUrlData = async (url, chatId) => {
   };
 
   try {
+    status(`[URL] starting data pull`);
     const response = await axios.get(url, {
       responseType: "text",
     });
     const htmlContent = response.data;
     const body = extractBodyContent(htmlContent);
+    status(`[URL] website added to context`);
 
     return {
       prompt: prompts.extend_with_website(body, url ?? ""),
       url,
     };
   } catch (e) {
-    console.log(e);
+    log(Severity.error, "getUrlData", e.message);
     eventBus.emit("error", {
       chatId: chatId,
       msg: {
@@ -123,7 +129,8 @@ export const getUrlData = async (url, chatId) => {
 export const pullWebsite = async (
   trigger,
   messages,
-  options = { system: false }
+  options = { system: false },
+  status: (msg) => {}
 ) => {
   if (!trigger) {
     return { prompt: "", url: "" };
@@ -140,50 +147,74 @@ export const pullWebsite = async (
     return text.match(regex)?.filter((url) => url !== "");
   }
   const urls = findUrl(current.content);
-  console.log("found urls", urls, current);
+  log(Severity.debug, "pullWebsite", `found url ${JSON.stringify(urls)}`);
   if (!urls || urls.length === 0) {
     return { prompt: "", url: "" };
   }
+  status(`[URL] website detected`);
   const substrLength = options.system ? 0 : 1;
-  return getUrlData(urls[0].substring(substrLength), current.chatId);
+  return getUrlData(urls[0].substring(substrLength), current.chatId, status);
 };
 
-export const pullSearch = async (requestData, msg) => {
+export const pullSearch = async (requestData, msg, status = (msg) => {}) => {
   if (requestData.ragOptions.useSearch) {
+    status(`[web-search] checking if needs a web search`);
     const shouldQueryA = await askOllama(
       prompts.should_search(msg.content),
       requestData.model,
       undefined,
       { num_predict: 12, temperature: 0 }
     );
-    console.log("should search:", shouldQueryA);
     const shouldQuery = `${shouldQueryA}`.toLowerCase().indexOf("true") > -1;
+    log(Severity.debug, "pullSearch", `${shouldQuery}, ${shouldQueryA}`);
+    status(
+      `[web-search] ${
+        shouldQuery ? "requires web search" : "decided not to search"
+      }`
+    );
     if (shouldQuery) {
+      status(`[web-search] preparing search query`);
       const query = await askOllama(
         prompts.geneare_search_query(msg.content),
         requestData.model,
         undefined,
         { temperature: 0 }
       );
+      log(Severity.debug, "pullSearch", `searchQuery: ${query}`);
 
       const results = await SearchXng().search(query.replace(/"|'/g, ""));
+      status(`[web-search] got search results, picking the best`);
       const pick = await askOllama(
         prompts.pick_search_result(results, msg.content),
         requestData.model,
         undefined,
         { temperature: 0, num_predict: 100 }
       );
-      console.log("pick", pick);
+      log(Severity.debug, "pullSearch", `choice: ${pick}`);
+      status(`[web-search] pulling website content`);
       const urlData = await pullWebsite(
         true,
         [{ content: pick, chatId: msg.chatId }],
-        { system: true }
+        { system: true },
+        //@ts-expect-error
+        status
       );
+      status(`[web-search] passed results to context`);
       return urlData;
+    } else {
+      return { prompt: "", url: "" };
     }
   } else {
     return { prompt: "", url: "" };
   }
+};
+
+export const pullDate = async () => {
+  return {
+    prompt: `
+    
+    ** context: if you need it the current date is: ${new Date().toString()}. **`,
+  };
 };
 
 const cleanAndExtendMsgs = (msg, i, length, extend) => {
@@ -201,17 +232,25 @@ const cleanAndExtendMsgs = (msg, i, length, extend) => {
   };
 };
 
-export const getData = async (collection, model, ragModel, question, limit) => {
+export const getData = async (
+  collection,
+  model,
+  ragModel,
+  question,
+  limit,
+  status = (msg) => {}
+) => {
   if (!collection) {
     return "";
   }
   const Model = ChromaModel(collection, ragModel);
+  status(`[RAG] distilling keywords`);
   const distilledQuestion = await askOllama(
     prompts.generate_keywords(question),
     model
   );
+  status(`[RAG] getting data based on keywords`);
   const collections = await Model.query(distilledQuestion, limit);
-  console.log("c", collections.metadatas);
   const indexRoot = path.resolve(__dirname, STORAGES().indexing);
   const documents = collections.documents
     .map(
@@ -225,6 +264,7 @@ export const getData = async (collection, model, ragModel, question, limit) => {
     .replace(/\\+n/g, "")
     .replace(/"/g, "'");
 
+  status(`[RAG] prepared ${documents.length} chunks`);
   return prompts.extend_with_documents(documents);
 };
 
@@ -235,35 +275,48 @@ export const streamingChat = async (requestData) => {
     const chatId = msg.chatId;
     const userQ = msg;
 
+    const currentDate = await pullDate();
+
+    const statusCallback = (msg) =>
+      eventBus.emit("chat:status", {
+        chatId: chatId,
+        msg,
+      });
+
     // get RAG data
     const documents = await getData(
       requestData.collection,
       requestData.model,
       requestData.ragOptions.model,
       msg.content,
-      requestData.ragOptions.chunks || 10
+      requestData.ragOptions.chunks || 10,
+      statusCallback
     );
-
     // get website data
     // do not extend with website data if collection is provided - to preserve context
     const websiteData = await pullWebsite(
       !requestData.collection,
       requestData.messages,
-      requestData.config
+      requestData.config,
+      statusCallback
     );
 
-    const searchData = await pullSearch(requestData, msg);
-
+    const searchData = await pullSearch(requestData, msg, statusCallback);
     const messageContext = msg.context
       ? `this is the context of the question: ${msg.context}.`
       : "";
 
-    console.log({ websiteData, searchData });
+    log(
+      Severity.debug,
+      "streamingChat",
+      `${JSON.stringify({ websiteData, searchData })}`
+    );
     // Prepare request
     let request = {
       messages: [
         ...requestData.messages.map((elem, i) =>
           cleanAndExtendMsgs(elem, i, requestData.messages.length, [
+            currentDate.prompt,
             documents,
             websiteData.prompt,
             searchData.prompt,
@@ -274,24 +327,25 @@ export const streamingChat = async (requestData) => {
       options: requestData.options ?? {},
       model: requestData.model,
     };
-    console.log("request", request);
+
+    log(Severity.debug, "streamingChat", `request: ${JSON.stringify(request)}`);
 
     // pass the prepared data to Ollama
     const url = `${config.ollama.server}/${config.ollama.api.chat}`;
 
+    statusCallback("query sent to LLM");
     const call = async () => {
       eventBus.emit("chat:streaming", {
         chatId,
         message: { isStreaming: true },
       });
-      console.log("calling");
+  ;
       const controller = new AbortController();
       const response = await axios.post(url, request, {
         responseType: "stream", // Set response type to stream
         signal: controller.signal,
       });
       eventBus.emit("controller", { chatId, controller });
-      // response.data.pipe(res);
 
       // Variable to accumulate all chunks into a single string
       let collectedChunks = "";
@@ -318,7 +372,6 @@ export const streamingChat = async (requestData) => {
         const json = JSON.parse(read);
         collectedChunks += json.response ? json.response : json.message.content; // Read and append chunk to collectedChunks
         if (json.done) {
-          console.log("answer done");
           result = {
             model: json.model,
             created_at: json.created_at,
@@ -342,6 +395,7 @@ export const streamingChat = async (requestData) => {
             chatId,
             message: { isStreaming: false },
           });
+          statusCallback("")
         } else {
           eventBus.emit("chat:answer", {
             chatId: msg.chatId,
@@ -358,7 +412,6 @@ export const streamingChat = async (requestData) => {
           if (requestData.messages.length === 1) {
             setTimeout(() => {
               const messages = ListMessages();
-              console.log(messages);
               if (messages) {
                 eventBus.emit("chat:new", { message: messages[0] });
               }
@@ -388,7 +441,7 @@ export const streamingChat = async (requestData) => {
     const executor = async (tries = 3) => {
       try {
         await call();
-      } catch {
+      } catch (e) {
         if (tries > 0) {
           eventBus.emit("error", {
             chatId: chatId,
@@ -400,9 +453,10 @@ export const streamingChat = async (requestData) => {
             },
           });
           await sleep(2000);
-          console.log("retry");
+          log(Severity.debug, "streamingChat:executor", `retry`);
           executor(tries - 1);
         } else {
+          log(Severity.error, "streamingChat:executor", e.message);
           eventBus.emit("error", {
             chatId: chatId,
             msg: {
@@ -418,6 +472,6 @@ export const streamingChat = async (requestData) => {
 
     // Pipe the external endpoint stream to the response to the client
   } catch (e) {
-    console.log("question failed", e);
+    log(Severity.error, "streamingChat", e.message);
   }
 };
