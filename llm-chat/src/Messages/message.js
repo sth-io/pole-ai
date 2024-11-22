@@ -12,10 +12,11 @@ import ReactMarkdown from "react-markdown";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import CachedIcon from "@mui/icons-material/Cached";
 import AltRouteIcon from "@mui/icons-material/AltRoute";
 import Tooltip from "@mui/material/Tooltip";
-import { Chip,  Modal, Paper, Stack } from "@mui/material";
+import { Chip, Modal, Paper, Stack } from "@mui/material";
 import { Highlighter } from "rc-highlight";
 import { trimText } from "../utils/text";
 import { Alternatives } from "./Alternatives";
@@ -251,7 +252,7 @@ export const Message = React.memo(
                 </Container>
               </Tooltip>
               {message.role === "assistant" && (
-                <Tooltip 
+                <Tooltip
                   disableInteractive
                   title="Diverge - start a new conversation from this point"
                 >
@@ -279,6 +280,19 @@ export const Message = React.memo(
                   </Container>
                 </Tooltip>
               )}
+              <Tooltip title="Copy - copies the message">
+                <Container sx={{ flex: 1 }} disableGutters>
+                  <ButtonIcon
+                    onClick={() =>
+                      navigator.clipboard.writeText(message.content)
+                    }
+                    transparent="true"
+                    size="small"
+                  >
+                    ContentCopyRoundedIcon
+                  </ButtonIcon>
+                </Container>
+              </Tooltip>
             </MsgOptions>
             {message.role === "assistant" && <MessageStats message={message} />}
           </Msg>
